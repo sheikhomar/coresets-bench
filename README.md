@@ -15,3 +15,10 @@ The BICO project can be built by using supplied `Makefile` in the `bico/build` d
 ```bash
 make -C bico/build
 ```
+
+The GS project can be built with CMake:
+
+```bash
+cmake -S gs -B gs/build
+cmake --build gs/build
+```

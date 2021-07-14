@@ -34,5 +34,5 @@
 # Visual Studio Code
 .vscode/settings.json
 
-data/
+/data/
 build/
