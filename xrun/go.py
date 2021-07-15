@@ -56,7 +56,7 @@ def ensure_dataset_exists(dataset: Dataset):
         download_file(dataset.download_url, local_file_path)
 
 
-@click.command(help="Import product data.")
+@click.command(help="Run experiments.")
 def main():
     datasets = {
         "census": Dataset(
@@ -82,7 +82,8 @@ def main():
     }
 
     algorithms = {
-        "bico": "bico/bin/BICO_Quickstart.exe"
+        "bico": "bico/bin/BICO_Quickstart.exe",
+        "basic-clustering": ["gs/build/gs", ""],
     }
 
     in_progress_dir = Path("data/queue/in-progress")
