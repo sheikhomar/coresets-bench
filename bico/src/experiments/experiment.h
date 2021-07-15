@@ -42,6 +42,7 @@ protected:
     size_t TargetCoresetSize;
     std::string InputFilePath;
     std::string OutputFilePath;
+    std::string OutputDir;
 
 public:
     void outputResultsToFile(ProxySolution<Point> *sol)
@@ -139,15 +140,16 @@ public:
 class CensusExperiment : public Experiment
 {
 public:
-    CensusExperiment()
+    CensusExperiment(std::string inputFilePath, size_t k, size_t m, std::string outputDir)
     {
         this->DimSize = 68UL;
         this->DataSize = 2458285UL;
-        this->ClusterSize = 200UL;
+        this->ClusterSize = k;
         this->LowDimSize = 50UL;
-        this->TargetCoresetSize = 40000UL;
-        this->InputFilePath = "data/raw/USCensus1990.data.txt";
-        this->OutputFilePath = "data/results/USCensus1990.data.txt";
+        this->TargetCoresetSize = m;
+        this->InputFilePath = inputFilePath;
+        this->OutputDir = outputDir;
+        this->OutputFilePath = inputFilePath + "/results.txt";
     }
 
     void prepareFileStream(std::istream &inData)
@@ -176,15 +178,16 @@ public:
 class CovertypeExperiment : public Experiment
 {
 public:
-    CovertypeExperiment()
+    CovertypeExperiment(std::string inputFilePath, size_t k, size_t m, std::string outputDir)
     {
         this->DimSize = 54UL;
         this->DataSize = 581012UL;
-        this->ClusterSize = 200UL;
+        this->ClusterSize = k;
         this->LowDimSize = 50UL;
-        this->TargetCoresetSize = 40000UL;
-        this->InputFilePath = "data/raw/covtype.data.gz";
-        this->OutputFilePath = "data/results/covtype.txt";
+        this->TargetCoresetSize = m;
+        this->InputFilePath = inputFilePath;
+        this->OutputDir = outputDir;
+        this->OutputFilePath = outputDir + "/results.txt";
     }
 
     void prepareFileStream(std::istream &inData)
@@ -217,13 +220,14 @@ class EnronExperiment : public Experiment
     bool firstPoint;
 
 public:
-    EnronExperiment()
+    EnronExperiment(std::string inputFilePath, size_t k, size_t m, std::string outputDir)
     {
-        this->ClusterSize = 200UL;
+        this->ClusterSize = k;
         this->LowDimSize = 50UL;
-        this->TargetCoresetSize = 40000UL;
-        this->InputFilePath = "data/raw/docword.enron.txt.gz";
-        this->OutputFilePath = "data/results/docword.enron.txt";
+        this->TargetCoresetSize = m;
+        this->InputFilePath = inputFilePath;
+        this->OutputDir = outputDir;
+        this->OutputFilePath = outputDir + "/results.txt";
     }
 
     void prepareFileStream(std::istream &inData)
@@ -306,15 +310,16 @@ public:
 class TowerExperiment : public Experiment
 {
 public:
-    TowerExperiment()
+    TowerExperiment(std::string inputFilePath, size_t k, size_t m, std::string outputDir)
     {
         this->DimSize = 3UL;
         this->DataSize = 4915200UL;
-        this->ClusterSize = 200UL;
+        this->ClusterSize = k;
         this->LowDimSize = 3UL;
-        this->TargetCoresetSize = 40000UL;
-        this->InputFilePath = "data/raw/Tower.txt";
-        this->OutputFilePath = "data/results/Tower.txt";
+        this->TargetCoresetSize = m;
+        this->InputFilePath = inputFilePath;
+        this->OutputDir = outputDir;
+        this->OutputFilePath = outputDir + "/results.txt";
     }
 
     void prepareFileStream(std::istream &inData)

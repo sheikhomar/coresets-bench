@@ -28,102 +28,68 @@ using namespace std::chrono;
 
 int main(int argc, char **argv)
 {
-    TowerExperiment experiment;
-    experiment.run();
-}
-
-int main_old(int argc, char **argv)
-{
-    using namespace CluE;
-
-    time_t starttime, endtime;
-    double difference;
-
-    if (argc < 8)
+    if (argc < 7)
     {
-        std::cout << "Usage: input n k d space output projections [splitchar [seed]]" << std::endl;
-        std::cout << "  input       = path to input file" << std::endl;
-        std::cout << "  n           = number of input points" << std::endl;
+        std::cout << "Usage: dataset k T output_path [seed]" << std::endl;
+        std::cout << "  dataset     = dataset name" << std::endl;
+        std::cout << "  data_path   = file path to dataset" << std::endl;
         std::cout << "  k           = number of desired centers" << std::endl;
-        std::cout << "  d           = dimension of an input point" << std::endl;
-        std::cout << "  space       = coreset size" << std::endl;
-        std::cout << "  output      = path to the output file" << std::endl;
-        std::cout << "  projections = number of random projections used for nearest neighbour search" << std::endl;
-        std::cout << "                in first level" << std::endl;
-        std::cout << "  splitchar   = input CSV split character" << std::endl;
-        std::cout << "  seed        = random seed (optional)" << std::endl;
+        std::cout << "  m           = coreset size" << std::endl;
+        std::cout << "  seed        = random seed" << std::endl;
+        std::cout << "  output_dir  = path to output results" << std::endl;
         std::cout << std::endl;
-        std::cout << "7 arguments expected, got " << argc - 1 << ":" << std::endl;
+        std::cout << "6 arguments expected, got " << argc - 1 << ":" << std::endl;
         for (int i = 1; i < argc; ++i)
-            std::cout << i << ".: " << argv[i] << std::endl;
+            std::cout << " " << i << ": " << argv[i] << std::endl;
         return 1;
     }
 
-    // Read arguments
-    std::ifstream filestream(argv[1], std::ifstream::in);
-    int n = atoi(argv[2]);
-    int k = atoi(argv[3]);
-    int d = atoi(argv[4]);
-    int space = atoi(argv[5]);
-    std::ofstream outputstream(argv[6], std::ifstream::out);
-    int p = atoi(argv[7]);
-    std::string splitchar(",");
-    if (argc >= 9)
-        splitchar = std::string(argv[8], 1);
-    if (argc >= 10)
-        Randomness::initialize(atoi(argv[9]));
+    std::string datasetName(argv[1]);
+    std::string dataFilePath(argv[2]);
+    size_t k = std::stoul(argv[3]);
+    size_t m = std::stoul(argv[4]);
+    int randomSeed = std::stoi(argv[5]);
+    std::string outputFilePath(argv[6]);
 
-    time(&starttime);
+    boost::algorithm::to_lower(datasetName);
+    boost::algorithm::trim(datasetName);
 
-    // Initialize BICO
-    Bico<Point> bico(d, n, k, p, space, new SquaredL2Metric(), new PointWeightModifier());
+    std::cout << "Running BICO with following parameters:\n";
+    std::cout << " - Dataset:      " << datasetName << "\n";
+    std::cout << " - Input path:   " << dataFilePath << "\n";
+    std::cout << " - Clusters:     " << k << "\n";
+    std::cout << " - Coreset size: " << m << "\n";
+    std::cout << " - Random Seed:  " << randomSeed << "\n";
+    std::cout << " - Output path:  " << outputFilePath << "\n";
 
-    int pos = 0;
-    while (filestream.good())
+    if (randomSeed != -1)
     {
-        // Read line and construct point
-        std::string line;
-        std::getline(filestream, line);
-        std::vector<std::string> stringcoords;
-        boost::split(stringcoords, line, boost::is_any_of(splitchar));
-
-        std::vector<double> coords;
-        coords.reserve(stringcoords.size());
-        for (size_t i = 0; i < stringcoords.size(); ++i)
-            coords.push_back(atof(stringcoords[i].c_str()));
-        Point p(coords);
-
-        if (p.dimension() != d)
-        {
-            std::clog << "Line skipped because line dimension is " << p.dimension() << " instead of " << d << std::endl;
-            continue;
-        }
-
-        // Call BICO point update
-        bico << p;
+        std::cout << "Initializing randomess with random seed: " << randomSeed << "\n";
+        Randomness::initialize(randomSeed);
     }
 
-    // Retrieve coreset
-    ProxySolution<Point> *sol = bico.compute();
-
-    // Output coreset size
-    outputstream << sol->proxysets[0].size() << "\n";
-
-    // Output coreset points
-    for (size_t i = 0; i < sol->proxysets[0].size(); ++i)
+    if (datasetName == "census")
     {
-        // Output weight
-        outputstream << sol->proxysets[0][i].getWeight() << " ";
-        // Output center of gravity
-        for (size_t j = 0; j < sol->proxysets[0][i].dimension(); ++j)
-        {
-            outputstream << sol->proxysets[0][i][j];
-            if (j < sol->proxysets[0][i].dimension() - 1)
-                outputstream << " ";
-        }
-        outputstream << "\n";
+        CensusExperiment experiment(dataFilePath, k, m, outputFilePath);
+        experiment.run();
     }
-    outputstream.close();
-
-    return 0;
+    else if (datasetName == "covertype")
+    {
+        CovertypeExperiment experiment(dataFilePath, k, m, outputFilePath);
+        experiment.run();
+    }
+    else if (datasetName == "enron")
+    {
+        EnronExperiment experiment(dataFilePath, k, m, outputFilePath);
+        experiment.run();
+    }
+    else if (datasetName == "tower")
+    {
+        TowerExperiment experiment(dataFilePath, k, m, outputFilePath);
+        experiment.run();
+    } 
+    else
+    {
+        std::cout << "Unknown dataset: " << datasetName << "\n";
+    }
 }
