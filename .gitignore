@@ -34,5 +34,8 @@
 # Visual Studio Code
 .vscode/settings.json
 
+# Python
+__pycache__
+
 /data/
 build/
