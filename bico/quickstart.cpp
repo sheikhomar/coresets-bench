@@ -6,6 +6,7 @@
 #include <time.h>
 #include <chrono>
 #include <iomanip>
+#include <map>
 
 #include <boost/algorithm/string.hpp>
 
@@ -49,7 +50,7 @@ int main(int argc, char **argv)
     size_t k = std::stoul(argv[3]);
     size_t m = std::stoul(argv[4]);
     int randomSeed = std::stoi(argv[5]);
-    std::string outputFilePath(argv[6]);
+    std::string outputDir(argv[6]);
 
     boost::algorithm::to_lower(datasetName);
     boost::algorithm::trim(datasetName);
@@ -60,7 +61,7 @@ int main(int argc, char **argv)
     std::cout << " - Clusters:     " << k << "\n";
     std::cout << " - Coreset size: " << m << "\n";
     std::cout << " - Random Seed:  " << randomSeed << "\n";
-    std::cout << " - Output path:  " << outputFilePath << "\n";
+    std::cout << " - Output dir:   " << outputDir << "\n";
 
     if (randomSeed != -1)
     {
@@ -68,28 +69,31 @@ int main(int argc, char **argv)
         Randomness::initialize(randomSeed);
     }
 
+    std::shared_ptr<Experiment> experiment;
     if (datasetName == "census")
     {
-        CensusExperiment experiment(dataFilePath, k, m, outputFilePath);
-        experiment.run();
+        experiment = std::make_shared<CensusExperiment>();
     }
     else if (datasetName == "covertype")
     {
-        CovertypeExperiment experiment(dataFilePath, k, m, outputFilePath);
-        experiment.run();
+        experiment = std::make_shared<CovertypeExperiment>();
     }
     else if (datasetName == "enron")
     {
-        EnronExperiment experiment(dataFilePath, k, m, outputFilePath);
-        experiment.run();
+        experiment = std::make_shared<EnronExperiment>();
     }
     else if (datasetName == "tower")
     {
-        TowerExperiment experiment(dataFilePath, k, m, outputFilePath);
-        experiment.run();
+        experiment = std::make_shared<TowerExperiment>();
     } 
     else
     {
         std::cout << "Unknown dataset: " << datasetName << "\n";
     }
+
+    experiment->InputFilePath = dataFilePath;
+    experiment->ClusterSize = k;
+    experiment->TargetCoresetSize = m;
+    experiment->OutputDir = outputDir;
+    experiment->run();
 }
