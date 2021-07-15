@@ -1,7 +1,8 @@
-import os, requests, subprocess
+import os, requests, subprocess, json, shutil, time
+from timeit import default_timer as timer
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -84,43 +85,89 @@ def main():
         "bico": "bico/bin/BICO_Quickstart.exe"
     }
 
-    algorithm = "bico"
-    dataset_name = "tower"
-    k = 10
-    m = 200 * k
 
-    algorithm_exe_path = algorithms[algorithm]
-    dataset = datasets[dataset_name]
-    ensure_dataset_exists(dataset)
-    data_file_path = str(dataset.local_file_path)
+    in_progress_dir = Path("data/queue/in-progress")
+    if not in_progress_dir.exists():
+        os.makedirs(in_progress_dir)
 
-    experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    experiment_dir = f"data/experiments/{dataset_name}/{algorithm}-k{k}-m{m}/{experiment_no}"
-    os.makedirs(experiment_dir)
+    completed_dir = Path("data/queue/completed")
+    if not completed_dir.exists():
+        os.makedirs(completed_dir)
 
-    cmd = [
-        "nohup",
-        algorithm_exe_path,
-        dataset_name, # Dataset
-        data_file_path, # Input path
-        str(k), # Number of clusters
-        str(m), # Coreset size
-        "-1", # Random Seed
-        experiment_dir, # Output dir
-    ]
+    while True:
+        file_paths = Path("data/queue/ready/").glob("*.json")
 
-    print(f"Running experiment with {cmd}")
-    p = subprocess.Popen(
-        args=cmd,
-        stdout=open(experiment_dir + "/stdout.out", "a"),
-        stderr=open(experiment_dir + "/stderr.out", "a"),
-        start_new_session=True
-    )
-    with open(experiment_dir + "/pid.out", "w") as f:
-        f.write(str(p.pid))
-        print(f"Process ID: {p.pid}")
-    
-    print("Done!")
+        for queue_item_path in file_paths:
+            inprogress_path = in_progress_dir / queue_item_path.name
+            shutil.move(queue_item_path, inprogress_path)
+            with open(inprogress_path, "r") as f:
+                experiment_details = json.load(f)
+
+            algorithm = experiment_details["algorithm"]
+            dataset_name = experiment_details["dataset"]
+            k = experiment_details["k"]
+            m = experiment_details["m"]
+
+            algorithm_exe_path = algorithms[algorithm]
+            dataset = datasets[dataset_name]
+            ensure_dataset_exists(dataset)
+            data_file_path = str(dataset.local_file_path)
+
+            experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            experiment_dir = f"data/experiments/{dataset_name}/{algorithm}-k{k}-m{m}/{experiment_no}"
+            os.makedirs(experiment_dir)
+
+            cmd = [
+                "nohup",
+                algorithm_exe_path,
+                dataset_name, # Dataset
+                data_file_path, # Input path
+                str(k), # Number of clusters
+                str(m), # Coreset size
+                "-1", # Random Seed
+                experiment_dir, # Output dir
+            ]
+
+            experiment_details["output_dir"] = experiment_dir
+            experiment_details["command"] = " ".join(cmd)
+            experiment_details["start_time"] = datetime.now().isoformat()
+            with open(inprogress_path, "w") as f:
+                json.dump(experiment_details, f, indent=4, sort_keys=False)
+
+            start_time = timer()
+            print(f"Running experiment with {cmd}")
+            p = subprocess.Popen(
+                args=cmd,
+                stdout=open(experiment_dir + "/stdout.out", "a"),
+                stderr=open(experiment_dir + "/stderr.out", "a"),
+                start_new_session=True
+            )
+            with open(experiment_dir + "/pid.out", "w") as f:
+                f.write(str(p.pid))
+                print(f"Process ID: {p.pid}")
+            
+            experiment_details["pid"] = p.pid
+            with open(inprogress_path, "w") as f:
+                json.dump(experiment_details, f, indent=4, sort_keys=False)
+            
+            print("Waiting for process to finish...")
+            
+            p.wait()
+
+            duration_secs = timer() - start_time
+
+            print(f"Process completed. Duration {duration_secs:.1f} seconds.")
+
+            experiment_details["end_time"] = datetime.now().isoformat()
+            experiment_details["duration_secs"] = duration_secs
+            with open(inprogress_path, "w") as f:
+                json.dump(experiment_details, f, indent=4, sort_keys=False)
+            
+            completed_path = completed_dir / inprogress_path.name
+            shutil.move(inprogress_path, completed_path)
+
+        print("Sleeping....")
+        time.sleep(60)
 
 if __name__ == "__main__":
     main()  # pylint: disable=no-value-for-parameter
