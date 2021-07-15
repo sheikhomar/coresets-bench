@@ -8,6 +8,7 @@
 #include <data/census_parser.hpp>
 #include <data/covertype_parser.hpp>
 #include <data/tower_parser.hpp>
+#include <utils/random.hpp>
 
 using namespace std;
 using namespace clustering;
@@ -137,7 +138,7 @@ int main() {
 
   // size_t k = 3; // Number of clusters.
   // size_t T = 20; // Number of target points.
-  // size_t T_s = 1; // 
+  // size_t T_s = 1; //
   // size_t beta = 100; //Variable for ring ranges
   // size_t H = 4; // Group range size
   // coresets::GroupSampling gs(k, T, beta, H, T_s);
@@ -155,7 +156,7 @@ int main() {
   //   printf(point->IsCenter ? "Center" : "Point");
   //   printf(" %ld with weight %0.4f\n", point->Index, point->Weight);
   // }
-  
+
   // auto parser = CensusParser();
   // auto parsedData = parser.parse("data/raw/USCensus1990.data.txt");
 
@@ -166,7 +167,56 @@ int main() {
   auto parsedData = parser.parse("data/raw/Tower.txt");
 
   printf("Data loading completed!\n");
-  
+
   KMeans kMeansAlg(10, true, false, 100U, 0.0001);
   auto result = kMeansAlg.run(*parsedData);
+}
+
+
+int main_new(int argc, char **argv)
+{
+  if (argc < 8)
+  {
+    std::cout << "Usage: algorithm dataset k m output_path seed" << std::endl;
+    std::cout << "  algorithm   = algorithm" << std::endl;
+    std::cout << "  dataset     = dataset name" << std::endl;
+    std::cout << "  data_path   = file path to dataset" << std::endl;
+    std::cout << "  k           = number of desired centers" << std::endl;
+    std::cout << "  m           = coreset size" << std::endl;
+    std::cout << "  seed        = random seed" << std::endl;
+    std::cout << "  output_dir  = path to output results" << std::endl;
+    std::cout << std::endl;
+    std::cout << "7 arguments expected, got " << argc - 1 << ":" << std::endl;
+    for (int i = 1; i < argc; ++i)
+      std::cout << " " << i << ": " << argv[i] << std::endl;
+    return 1;
+  }
+
+  std::string algorithm(argv[1]);
+  std::string datasetName(argv[2]);
+  std::string dataFilePath(argv[3]);
+  size_t k = std::stoul(argv[4]);
+  size_t m = std::stoul(argv[5]);
+  int randomSeed = std::stoi(argv[6]);
+  std::string outputDir(argv[7]);
+
+  boost::algorithm::to_lower(algorithm);
+  boost::algorithm::trim(algorithm);
+
+  boost::algorithm::to_lower(datasetName);
+  boost::algorithm::trim(datasetName);
+
+  std::cout << "Running " << algorithm << " with following parameters:\n";
+  std::cout << " - Dataset:      " << datasetName << "\n";
+  std::cout << " - Input path:   " << dataFilePath << "\n";
+  std::cout << " - Clusters:     " << k << "\n";
+  std::cout << " - Coreset size: " << m << "\n";
+  std::cout << " - Random Seed:  " << randomSeed << "\n";
+  std::cout << " - Output dir:   " << outputDir << "\n";
+
+  if (randomSeed != -1)
+  {
+    std::cout << "Initializing randomess with random seed: " << randomSeed << "\n";
+    utils::Random::initialize(randomSeed);
+  }
 }
