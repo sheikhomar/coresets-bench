@@ -85,7 +85,6 @@ def main():
         "bico": "bico/bin/BICO_Quickstart.exe"
     }
 
-
     in_progress_dir = Path("data/queue/in-progress")
     if not in_progress_dir.exists():
         os.makedirs(in_progress_dir)
@@ -94,10 +93,27 @@ def main():
     if not completed_dir.exists():
         os.makedirs(completed_dir)
 
+    discarded_dir = Path("data/queue/discarded")
+    if not discarded_dir.exists():
+        os.makedirs(discarded_dir)
+
     while True:
-        file_paths = Path("data/queue/ready/").glob("*.json")
+        print("Searching for files in data/queue/ready ...")
+        file_paths = list(Path("data/queue/ready/").glob("*.json"))
+        print(f"Found {len(file_paths)} file(s).")
 
         for queue_item_path in file_paths:
+            print(f"File exists {queue_item_path}")
+
+            completed_path = completed_dir / queue_item_path.name
+            if completed_path.exists():
+                print(f"File exists {queue_item_path}")
+                discarded_file_name = queue_item_path.name + "-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                discarded_path = discarded_dir / discarded_file_name
+                shutil.move(queue_item_path, discarded_path)
+                print(f"Experiment {queue_item_path.name} is already executed. Discarded {discarded_path}...")
+                continue
+
             inprogress_path = in_progress_dir / queue_item_path.name
             shutil.move(queue_item_path, inprogress_path)
             with open(inprogress_path, "r") as f:
@@ -163,11 +179,11 @@ def main():
             with open(inprogress_path, "w") as f:
                 json.dump(experiment_details, f, indent=4, sort_keys=False)
             
-            completed_path = completed_dir / inprogress_path.name
+            
             shutil.move(inprogress_path, completed_path)
 
         print("Sleeping....")
-        time.sleep(60)
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()  # pylint: disable=no-value-for-parameter
