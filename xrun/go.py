@@ -1,10 +1,25 @@
-import os
-import requests
+import os, requests, subprocess
 
+from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 
 import click
 from tqdm import tqdm
+
+@dataclass
+class Dataset:
+    name: str
+    download_url: str
+    file_size: int
+
+    @property
+    def local_file_name(self) -> str:
+        return os.path.basename(self.download_url)
+
+    @property
+    def local_file_path(self) -> Path:
+        return Path(f"data/input/{self.local_file_name}")
 
 
 def download_file(url: str, file_path: Path):
@@ -23,29 +38,89 @@ def download_file(url: str, file_path: Path):
                 f.write(chunk)
 
 
-def ensure_dataset_exists(url: str, expected_file_size: int=1024):
-    file_name = os.path.basename(url)
-    local_file_path = Path(f"data/raw/{file_name}")
+def ensure_dataset_exists(dataset: Dataset):
+    local_file_path = dataset.local_file_path
 
     if not local_file_path.parent.exists():
         os.makedirs(str(local_file_path.parent))
 
-    actual_file_size = local_file_path.stat().st_size
-    if local_file_path.exists() and actual_file_size < expected_file_size:
-        print(f"The size of file {local_file_path.name} is {actual_file_size} but expected {expected_file_size}. Removing file...")
-        os.remove(local_file_path)
+    if local_file_path.exists():
+        actual_file_size = local_file_path.stat().st_size
+        expected_file_size = dataset.file_size
+        if actual_file_size < expected_file_size:
+            print(f"The size of file {local_file_path.name} is {actual_file_size} but expected {expected_file_size}. Removing file...")
+            os.remove(local_file_path)
     
     if not local_file_path.exists():
-        download_file(url, local_file_path)
+        download_file(dataset.download_url, local_file_path)
 
 
 @click.command(help="Import product data.")
 def main():
-    ensure_dataset_exists("https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt", 361344227)
-    ensure_dataset_exists("https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz", 11240707)
-    ensure_dataset_exists("https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.enron.txt.gz", 12313965)
-    ensure_dataset_exists("http://homepages.uni-paderborn.de/frahling/instances/Tower.txt", 52828754)
+    datasets = {
+        "census": Dataset(
+                    name="census",
+                    download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt",
+                    file_size=361344227
+                ),
+        "covertype": Dataset(
+                    name="covertype",
+                    download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz",
+                    file_size=11240707
+                ),
+        "enron": Dataset(
+                    name="enron",
+                    download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.enron.txt.gz",
+                    file_size=12313965
+                ),
+        "tower": Dataset(
+                    name="tower",
+                    download_url="http://homepages.uni-paderborn.de/frahling/instances/Tower.txt",
+                    file_size=52828754
+                )
+    }
 
+    algorithms = {
+        "bico": "bico/bin/BICO_Quickstart.exe"
+    }
+
+    algorithm = "bico"
+    dataset_name = "tower"
+    k = 10
+    m = 200 * k
+
+    algorithm_exe_path = algorithms[algorithm]
+    dataset = datasets[dataset_name]
+    ensure_dataset_exists(dataset)
+    data_file_path = str(dataset.local_file_path)
+
+    experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    experiment_dir = f"data/experiments/{dataset_name}/{algorithm}-k{k}-m{m}/{experiment_no}"
+    os.makedirs(experiment_dir)
+
+    cmd = [
+        "nohup",
+        algorithm_exe_path,
+        dataset_name, # Dataset
+        data_file_path, # Input path
+        str(k), # Number of clusters
+        str(m), # Coreset size
+        "-1", # Random Seed
+        experiment_dir, # Output dir
+    ]
+
+    print(f"Running experiment with {cmd}")
+    p = subprocess.Popen(
+        args=cmd,
+        stdout=open(experiment_dir + "/stdout.out", "a"),
+        stderr=open(experiment_dir + "/stderr.out", "a"),
+        start_new_session=True
+    )
+    with open(experiment_dir + "/pid.out", "w") as f:
+        f.write(str(p.pid))
+        print(f"Process ID: {p.pid}")
+    
+    print("Done!")
 
 if __name__ == "__main__":
     main()  # pylint: disable=no-value-for-parameter
