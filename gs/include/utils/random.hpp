@@ -14,11 +14,10 @@ namespace utils
     class RandomIndexer
     {
     public:
-        RandomIndexer(std::mt19937 randomEngine, size_t size);
+        RandomIndexer(size_t size);
         size_t next();
 
     private:
-        std::mt19937 randomEngine2;
         std::uniform_int_distribution<size_t> sampler;
     };
 
@@ -86,12 +85,13 @@ namespace utils
 
         /**
          * @brief Initialises random class.
-         * @param fixedSeed The seed for random number generators. Use a value other than -1 to make the randomized algorithms deterministic. Choose -1 to generate a random seed.
          */
-        Random(int fixedSeed = 42);
+        Random();
+
+        static void initialize(int fixedSeed);
 
     private:
-        std::mt19937 randomEngine;
+        
         std::uniform_real_distribution<> pickRandomValue;
     };
 }

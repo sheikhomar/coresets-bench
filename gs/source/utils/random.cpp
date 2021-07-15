@@ -2,29 +2,20 @@
 
 using namespace utils;
 
-RandomIndexer::RandomIndexer(std::mt19937 re, size_t s) : randomEngine2(re), sampler(0, s - 1)
+static std::mt19937 randomEngine;
+
+RandomIndexer::RandomIndexer(size_t s) : sampler(0, s - 1)
 {
 }
 
 size_t
 RandomIndexer::next()
 {
-    return sampler(randomEngine2);
+    return sampler(randomEngine);
 }
 
-RandomIndexer
-Random::getIndexer(size_t size)
-{
-    return RandomIndexer(randomEngine, size);
-}
-
-double
-Random::getDouble()
-{
-    return pickRandomValue(randomEngine);
-}
-
-Random::Random(int fixedSeed)
+void
+Random::initialize(int fixedSeed)
 {
     if (fixedSeed == -1)
     {
@@ -39,6 +30,22 @@ Random::Random(int fixedSeed)
     {
         randomEngine.seed(static_cast<uint>(fixedSeed));
     }
+}
+
+RandomIndexer
+Random::getIndexer(size_t size)
+{
+    return RandomIndexer(size);
+}
+
+double
+Random::getDouble()
+{
+    return pickRandomValue(randomEngine);
+}
+
+Random::Random()
+{
 }
 
 std::shared_ptr<blaze::DynamicVector<size_t>>
@@ -92,7 +99,7 @@ Random::choice(const size_t k, const size_t n, blaze::DynamicVector<size_t> weig
 
     for (size_t i = 0; i < k; i++)
     {
-        size_t pickedIndex = weightedChoice(this->randomEngine);
+        size_t pickedIndex = weightedChoice(randomEngine);
         (*result)[i] = pickedIndex;
     }
 
@@ -103,7 +110,7 @@ size_t
 Random::choice(blaze::DynamicVector<double> weights)
 {
     std::discrete_distribution<size_t> weightedChoice(weights.begin(), weights.end());
-    size_t pickedIndex = weightedChoice(this->randomEngine);
+    size_t pickedIndex = weightedChoice(randomEngine);
     return pickedIndex;
 }
 
