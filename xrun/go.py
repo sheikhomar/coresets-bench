@@ -124,6 +124,7 @@ def main():
             dataset_name = experiment_details["dataset"]
             k = experiment_details["k"]
             m = experiment_details["m"]
+            randomSeed = experiment_details["randomSeed"]
 
             algorithm_exe_path = algorithms[algorithm]
             dataset = datasets[dataset_name]
@@ -141,7 +142,7 @@ def main():
                 data_file_path, # Input path
                 str(k), # Number of clusters
                 str(m), # Coreset size
-                "-1", # Random Seed
+                str(randomSeed), # Random Seed
                 experiment_dir, # Output dir
             ]
 
