@@ -1,4 +1,5 @@
 import os, requests, subprocess, json, shutil, time
+from typing import List
 from timeit import default_timer as timer
 
 from dataclasses import dataclass
@@ -7,6 +8,33 @@ from pathlib import Path
 
 import click
 from tqdm import tqdm
+
+KNOWN_ALGORITHMS = [
+    "basic-clustering",
+    "best-clustering",
+    "sensitivity-sampling",
+    "group-sampling",
+    "bico",
+]
+
+
+def validate_algorithms(ctx, param, value):
+    if value is None or value == "all":
+        return KNOWN_ALGORITHMS
+    ret_val = []
+    for s in value.split(","):
+        if s in ["basic", "basic-clustering"]:
+            ret_val.append("basic-clustering")
+        elif s in ["best", "best-clustering"]:
+            ret_val.append("best-clustering")
+        elif s in ["ss", "sensitivity", "sensitivity-sampling"]:
+            ret_val.append("sensitivity-sampling")
+        elif s in ["gs", "group", "group-sampling"]:
+            ret_val.append("group-sampling")
+        elif s in ["bico"]:
+            ret_val.append("bico")
+    return ret_val
+        
 
 @click.command(help="Generates experiment files.")
 @click.option(
@@ -21,14 +49,16 @@ from tqdm import tqdm
     type=click.INT,
     required=True,
 )
-def main(iter_start: int, iter_end: int):
-    algorithms = [
-        "basic-clustering",
-        "best-clustering",
-        "sensitivity-sampling",
-        "group-sampling",
-        "bico",
-    ]
+@click.option(
+    "-a",
+    "--algorithms",
+    type=click.STRING,
+    required=False,
+    default=None,
+    callback=validate_algorithms
+)
+def main(iter_start: int, iter_end: int, algorithms: List[str]) -> None:
+    print(algorithms)
     dataset_k_ranges = {
         "census": [10, 20, 30, 40, 50],
         "covertype": [10, 20, 30, 40, 50],
@@ -37,6 +67,8 @@ def main(iter_start: int, iter_end: int):
     }
 
     ready_dir = Path("data/queue/ready")
+    if not ready_dir.exists():
+        os.makedirs(ready_dir)
     for dataset, k_values in dataset_k_ranges.items():
         for algo in algorithms:
             for k in k_values:
@@ -53,8 +85,8 @@ def main(iter_start: int, iter_end: int):
                     file_path = ready_dir / f"{i:03}-{dataset}-{algo}-k{k}-m{m}.json"
                     if not file_path.exists():
                         print(f"Writing {file_path}...")
-                        with open(file_path, "w") as f:
-                            json.dump(exp_details, f, indent=4)
+                        # with open(file_path, "w") as f:
+                        #     json.dump(exp_details, f, indent=4)
                     else:
                         print(f"File already exists {file_path}. Skipping...")
 
