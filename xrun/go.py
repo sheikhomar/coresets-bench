@@ -1,6 +1,6 @@
 import dataclasses
 import os, requests, subprocess, json, shutil, time
-from typing import Dict, List
+from typing import Dict, List, Optional
 from timeit import default_timer as timer
 
 from dataclasses import dataclass
@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 
 import click
+import psutil
+
 from tqdm import tqdm
 
 @dataclass
@@ -37,7 +39,7 @@ class RunInfo:
     command: str
     start_time: str
     end_time: str
-    duration_secs: int
+    duration_secs: float
     process_id: int
 
     @classmethod
@@ -64,6 +66,9 @@ class RunInfo:
         with open(file_path, "w") as f:
             json.dump(dataclasses.asdict(self), f, indent=4, sort_keys=False)
 
+    @property
+    def started_at(self) -> datetime:
+        return datetime.fromisoformat(self.start_time)
 
 class ExperimentRunner:
     _datasets = {
@@ -88,25 +93,79 @@ class ExperimentRunner:
                     file_size=52828754
                 )
     }
-    _dir_ready = Path("data/queue/ready")
-    _dir_in_progress = Path("data/queue/in-progress")
-    _dir_completed = Path("data/queue/completed")
-    _dir_discarded = Path("data/queue/discarded")
+    _dir_ready = "data/queue/ready"
+    _dir_in_progress = "data/queue/in-progress"
+    _dir_completed = "data/queue/completed"
+    _dir_discarded = "data/queue/discarded"
+    _child_processes: List[subprocess.Popen] = []
 
     def __init__(self) -> None:
         for directory in [self._dir_ready, self._dir_in_progress, self._dir_completed, self._dir_discarded]:
-            if not directory.exists():
+            if not os.path.exists(directory):
                 print(f"Creating directory {directory}...")
                 os.makedirs(directory)
 
-    def run(self) -> None:
+    def run(self, max_active: int) -> None:
         self._download_datasets()
-        self._lunch_new_run()
+
+        while True:
+            self._clean_in_progress()
+
+            n_active = len(self._find_in_progress_files())
+            
+            if n_active < max_active:
+                self._lunch_new_run()
+        
+            # print("Checking CPU utilization: ", end="")
+            # cpu_utilisation = psutil.cpu_percent(interval=1, percpu=False)
+            # print(f"{cpu_utilisation} %")
+
+            time.sleep(2)
+
+    def _clean_in_progress(self):
+        file_paths = self._find_in_progress_files()
+        for file_path in file_paths:
+            run = RunInfo.load_json(file_path)
+            if not self._is_running(run.process_id):
+                print(f"Process {run.process_id} which started {run.started_at} is not running anymore.")
+
+                # Check if the result file is created.
+                done_file_path = Path(run.output_dir) / "done.out"
+                if done_file_path.exists():
+                    completed_at = datetime.fromtimestamp(done_file_path.stat().st_ctime)
+                    print(f" - Completed at {completed_at}. Moving to completed.")
+                    run.end_time = completed_at.isoformat()
+                    run.duration_secs = (completed_at - run.started_at).total_seconds()
+                    run.process_id = -2
+                    run.save_json(file_path)
+                    shutil.move(file_path, f"{self._dir_completed}/{file_path.name}")
+                else:
+                    print(" - Process stopped but done.out file does not exist! Discarding run.")
+                    self._move_to_discarded(file_path)
+
+    def _is_running(self, process_id: int) -> bool:
+        for proc in self._child_processes:
+            if proc.pid == process_id:
+                # poll() checks the process has terminated. Returns None value 
+                # if process has not terminated yet.
+                return proc.poll() is None
+
+        # psutil cannot detect child processes.
+        for proc in psutil.process_iter():
+            if process_id == proc.pid:
+                return True
+        return False
+
+    def _find_in_progress_files(self) -> List[Path]:
+        return self._find_json_files(self._dir_in_progress)
 
     def _lunch_new_run(self) -> None:
         # Find the next run file containing the experiment to run
         while True:
             run_file_path = self._get_next_run_file()
+            if run_file_path is None:
+                print("Ran out of experiments to run!")
+                return
             if self._should_discard(run_file_path):
                 self._move_to_discarded(run_file_path)
             else:
@@ -127,6 +186,7 @@ class ExperimentRunner:
             stderr=open(experiment_dir / "stderr.out", "a"),
             start_new_session=True
         )
+        self._child_processes.append(p)
 
         # Create PID file.
         with open(experiment_dir / "pid.out", "w") as f:
@@ -134,7 +194,7 @@ class ExperimentRunner:
 
         # Persist run details to disk.
         run_details.output_dir = str(experiment_dir)
-        run_details.command = cmd
+        run_details.command = " ".join(cmd)
         run_details.start_time = datetime.now().isoformat()
         run_details.process_id = p.pid
         run_details.save_json(run_file_path)
@@ -145,7 +205,6 @@ class ExperimentRunner:
         if run.algorithm == "bico":
             algorithm_exe_path = "bico/bin/BICO_Quickstart.exe"
             cmd = [
-                "nohup",
                 algorithm_exe_path,
                 run.dataset, # Dataset
                 str(data_file_path), # Input path
@@ -157,7 +216,6 @@ class ExperimentRunner:
             return cmd
         else:
             raise f"Unknown algorithm: {run.algorithm}"
-        pass
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
         experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -166,31 +224,40 @@ class ExperimentRunner:
         return Path(experiment_dir)
 
     def _move_to_progress(self, run_file_path: Path) -> Path:
-        inprogress_path = self._dir_in_progress / run_file_path.name
+        inprogress_path = f"{self._dir_in_progress}/{run_file_path.name}"
         shutil.move(run_file_path, inprogress_path)
         return inprogress_path
 
     def _should_discard(self, run_file_path: Path) -> bool:
         paths_to_check = [
-            self._dir_in_progress / run_file_path.name,
-            self._dir_completed / run_file_path.name,
+            os.path.join(self._dir_in_progress, run_file_path.name),
+            os.path.join(self._dir_completed  , run_file_path.name),
         ]
         for p in paths_to_check:
-            if p.exists():
+            if os.path.exists(p):
                 return True
         return False
 
     def _move_to_discarded(self, run_file_path: Path) -> None:
         discarded_file_name = run_file_path.name + "-" + datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        discarded_path = self._dir_discarded / discarded_file_name
+        discarded_path = f"{self._dir_discarded}/{discarded_file_name}"
         shutil.move(run_file_path, discarded_path)
         print(f"Experiment {run_file_path.name} is in progress or completed. Moving to {discarded_path}...")
 
-    def _get_next_run_file(self) -> Path:
-        file_paths = list(self._dir_ready.glob("*.json"))
-        print(f"Directory  {self._dir_ready} contains {len(file_paths)} file(s).")
-        return file_paths[0]
+    def _get_next_run_file(self) -> Optional[Path]:
+        file_paths = self._find_json_files(self._dir_ready)
+        if len(file_paths) > 0:
+            return file_paths[0]
+        return None
     
+    def _find_json_files(self, dir_name: str) -> List[Path]:
+        dir_name_str = str(dir_name)
+        return [
+            Path(f"{dir_name_str}/{file_name}")
+            for file_name in os.listdir(dir_name_str)
+            if file_name.endswith(".json")
+        ]
+
     def _download_datasets(self) -> None:
         for _, dataset in self._datasets.items():
             self._ensure_dataset_exists(dataset)
@@ -228,8 +295,15 @@ class ExperimentRunner:
 
 
 @click.command(help="Run experiments.")
-def main():
-    ExperimentRunner().run()
+@click.option(
+    "-m",
+    "--max-active",
+    type=click.INT,
+    default=1,
+    help="Maximum number of simultaneous runs."
+)
+def main(max_active: int):
+    ExperimentRunner().run(max_active=max_active)
 
 if __name__ == "__main__":
     main()  # pylint: disable=no-value-for-parameter
