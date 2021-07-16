@@ -85,8 +85,8 @@ def main(iter_start: int, iter_end: int, algorithms: List[str]) -> None:
                     file_path = ready_dir / f"{i:03}-{dataset}-{algo}-k{k}-m{m}.json"
                     if not file_path.exists():
                         print(f"Writing {file_path}...")
-                        # with open(file_path, "w") as f:
-                        #     json.dump(exp_details, f, indent=4)
+                        with open(file_path, "w") as f:
+                            json.dump(exp_details, f, indent=4)
                     else:
                         print(f"File already exists {file_path}. Skipping...")
 
