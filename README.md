@@ -16,12 +16,19 @@ The BICO project can be built by using supplied `Makefile` in the `bico/build` d
 make -C bico/build
 ```
 
+The MT project can be built with Make:
+
+```bash
+make -C mt
+```
+
 The GS project can be built with CMake:
 
 ```bash
 cmake -S gs -B gs/build
 cmake --build gs/build
 ```
+
 
 ## Running Experiments
 
