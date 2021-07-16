@@ -30,6 +30,11 @@ namespace coresets
          */
         const size_t TargetSize;
 
+        /**
+         * The actual data.
+         */
+        blaze::DynamicMatrix<double> Data;
+
         Coreset(size_t targetSize);
 
         /**
@@ -66,5 +71,10 @@ namespace coresets
          */
         std::shared_ptr<WeightedPoint>
         findPoint(size_t index, bool isCenter = false);
+
+        /**
+         * Copy actual data.
+         */
+        void transfer(const blaze::DynamicMatrix<double> &dataPoints, const blaze::DynamicMatrix<double> &centers);
     };
 }
