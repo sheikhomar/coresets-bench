@@ -72,6 +72,14 @@ public:
         outData.close();
     }
 
+    void writeDoneFile()
+    {
+        std::string outputFilePath = OutputDir + "/done.out";
+        std::ofstream outData(outputFilePath, std::ifstream::out);
+        outData << "done\n";
+        outData.close();
+    }
+
     virtual void parsePoint(std::vector<double> &result, std::istream &inData)
     {
         throw std::logic_error("parsePoint not yet implemented");
@@ -135,6 +143,7 @@ public:
         std::cout << "Processed " << pointCount << " points. Run time: " << sw.elapsedStr() << "s" << std::endl;
 
         outputResultsToFile(bico.compute());
+        writeDoneFile();
     }
 };
 
