@@ -64,6 +64,13 @@ def validate_algorithms(ctx, param, value):
     default=None,
     callback=validate_algorithms
 )
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    help="Recreate files."
+)
+def main(iter_start: int, iter_end: int, algorithms: List[str], force: bool) -> None:
     if not os.path.exists(MT_PATH):
         print(f"Random seed generator '{MT_PATH}' cannot be found. You can build it: make -C mt")
         return
@@ -92,7 +99,7 @@ def validate_algorithms(ctx, param, value):
                         "randomSeed": generate_random_seed(),
                     }
                     file_path = ready_dir / f"{i:03}-{dataset}-{algo}-k{k}-m{m}.json"
-                    if not file_path.exists():
+                    if force or not file_path.exists():
                         print(f"Writing {file_path}...")
                         with open(file_path, "w") as f:
                             json.dump(exp_details, f, indent=4)
