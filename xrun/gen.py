@@ -17,6 +17,13 @@ KNOWN_ALGORITHMS = [
     "bico",
 ]
 
+MT_PATH = "mt/bin/mt.exe"
+
+
+def generate_random_seed() -> int:
+    p = subprocess.run([MT_PATH], stdout=subprocess.PIPE)
+    return int(p.stdout)
+
 
 def validate_algorithms(ctx, param, value):
     if value is None or value == "all":
@@ -57,8 +64,10 @@ def validate_algorithms(ctx, param, value):
     default=None,
     callback=validate_algorithms
 )
-def main(iter_start: int, iter_end: int, algorithms: List[str]) -> None:
-    print(algorithms)
+    if not os.path.exists(MT_PATH):
+        print(f"Random seed generator '{MT_PATH}' cannot be found. You can build it: make -C mt")
+        return
+
     dataset_k_ranges = {
         "census": [10, 20, 30, 40, 50],
         "covertype": [10, 20, 30, 40, 50],
@@ -80,7 +89,7 @@ def main(iter_start: int, iter_end: int, algorithms: List[str]) -> None:
                         "dataset": dataset,
                         "k": k,
                         "m": m,
-                        "randomSeed": -1,
+                        "randomSeed": generate_random_seed(),
                     }
                     file_path = ready_dir / f"{i:03}-{dataset}-{algo}-k{k}-m{m}.json"
                     if not file_path.exists():
