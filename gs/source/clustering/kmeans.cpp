@@ -159,6 +159,11 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
   blaze::DynamicVector<size_t> clusterMemberCounts(k);
   ClusterAssignmentList cal(n, k);
 
+  if (MaxIterations == 0)
+  {
+    cal.assignAll(matrix, centroids);
+  }
+
   for (size_t i = 0; i < this->MaxIterations; i++)
   {
     // For each data point, assign the centroid that is closest to it.
