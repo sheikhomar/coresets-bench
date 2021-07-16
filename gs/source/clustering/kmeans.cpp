@@ -213,9 +213,6 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
       blaze::row(centroids, c) /= count;
     }
 
-    std::cout << "Centroids after iteration " << i << ": \n"
-              << centroids << "\n";
-
     // Compute the Frobenius norm
     auto diffAbsMatrix = blaze::abs(centroids - oldCentrioids);
     auto diffAbsSquaredMatrix = blaze::pow(diffAbsMatrix, 2); // Square each element.
