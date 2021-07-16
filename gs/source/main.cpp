@@ -14,6 +14,44 @@ using namespace std;
 using namespace clustering;
 using namespace data;
 
+void writeDoneFile(const std::string &outputDir)
+{
+    std::string outputFilePath = outputDir + "/done.out";
+    std::ofstream outData(outputFilePath, std::ifstream::out);
+    outData << "done\n";
+    outData.close();
+}
+
+void outputResultsToFile(const std::shared_ptr<coresets::Coreset> coreset, const std::string &outputDir)
+{
+  std::string outputFilePath = outputDir + "/results.txt";
+  std::cout << "Write results to " << outputFilePath << "...\n";
+
+  std::ofstream outData(outputFilePath, std::ifstream::out);
+
+  // Output coreset size
+  outData << coreset->size() << "\n";
+
+  // Output coreset points
+  for (size_t i = 0; i < coreset->size(); ++i)
+  {
+    auto point = coreset->at(i);
+
+    // Output weight
+    outData << point->Weight << " ";
+
+    // Output center of gravity
+    auto dimensions = coreset->Data.columns();
+    for (size_t j = 0; j < dimensions; ++j)
+    {
+        outData << coreset->Data.at(i, j);
+        if (j < dimensions - 1)
+          outData << " ";
+    }
+    outData << "\n";
+  }
+}
+
 int main() {
     blaze::DynamicMatrix<double> data {
     { -0.794152276623841F, 2.104951171962879F, },
