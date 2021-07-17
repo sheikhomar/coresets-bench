@@ -217,7 +217,18 @@ class ExperimentRunner:
             ]
             return cmd
         else:
-            raise f"Unknown algorithm: {run.algorithm}"
+            algorithm_exe_path = "gs/build/gs"
+            cmd = [
+                algorithm_exe_path,
+                run.algorithm,
+                run.dataset, # Dataset
+                str(data_file_path), # Input path
+                str(run.k), # Number of clusters
+                str(run.m), # Coreset size
+                str(run.randomSeed), # Random Seed
+                str(experiment_dir), # Output dir
+            ]
+            return cmd
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
         experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
