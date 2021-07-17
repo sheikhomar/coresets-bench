@@ -226,6 +226,12 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
         for (size_t c = 0; c < k; c++)
         {
             auto ring = rings->find(c, l);
+            if (ring == nullptr)
+            {
+                // No ring exist for the given range value `l` and cluster `c`
+                continue;
+            }
+
             auto clusterCost = ring->getTotalCost();
             auto ringPoints = ring->getPoints();
             
