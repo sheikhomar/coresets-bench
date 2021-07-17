@@ -27,10 +27,15 @@ void writeDoneFile(const std::string &outputDir)
 
 void outputResultsToFile(const std::shared_ptr<coresets::Coreset> coreset, const std::string &outputDir)
 {
-  std::string outputFilePath = outputDir + "/results.txt";
-  std::cout << "Write results to " << outputFilePath << "...\n";
+  std::string outputFilePath = outputDir + "/results.txt.gz";
+  printf("Write results to %s...\n", outputFilePath.c_str());
 
-  std::ofstream outData(outputFilePath, std::ifstream::out);
+  namespace io = boost::iostreams;
+  std::ofstream fileStream(outputFilePath, std::ios_base::out | std::ios_base::binary);
+  io::filtering_streambuf<io::output> fos;
+  fos.push(io::gzip_compressor(io::gzip_params(io::gzip::best_compression)));
+  fos.push(fileStream);
+  std::ostream outData(&fos);
 
   // Output coreset size
   outData << coreset->size() << "\n";

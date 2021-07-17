@@ -47,10 +47,15 @@ public:
 
     void outputResultsToFile(ProxySolution<Point> *sol)
     {
-        std::string outputFilePath = OutputDir + "/results.txt";
+        std::string outputFilePath = OutputDir + "/results.txt.gz";
         printf("Write results to %s...\n", outputFilePath.c_str());
 
-        std::ofstream outData(outputFilePath, std::ifstream::out);
+        namespace io = boost::iostreams;
+        std::ofstream fileStream(outputFilePath, std::ios_base::out | std::ios_base::binary);
+        io::filtering_streambuf<io::output> fos;
+        fos.push(io::gzip_compressor(io::gzip_params(io::gzip::best_compression)));
+        fos.push(fileStream);
+        std::ostream outData(&fos);
 
         // Output coreset size
         outData << sol->proxysets[0].size() << "\n";
@@ -69,7 +74,6 @@ public:
             }
             outData << "\n";
         }
-        outData.close();
     }
 
     void writeDoneFile()
