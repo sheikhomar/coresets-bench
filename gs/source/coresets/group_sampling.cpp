@@ -45,6 +45,8 @@ GroupSampling::run(const std::shared_ptr<clustering::ClusteringResult> result)
 std::shared_ptr<RingSet>
 GroupSampling::makeRings(const clustering::ClusterAssignmentList &clusterAssignments)
 {
+    printf("Making rings...\n");
+
     const int ringRangeStart = -static_cast<int>(floor(std::log10(static_cast<double>(Beta))));
     const int ringRangeEnd = -ringRangeStart;
     const auto n = clusterAssignments.getNumberOfPoints();
@@ -151,7 +153,9 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
         double clusterCost = rings->computeCostOfOvershotPoints(c);
         auto points = rings->getOvershotPoints(c);
 
+        #ifdef VERBOSE_DEBUG
         printf("    Cluster i=%ld  - cost(C_i ⋂ O) = %0.4f     |C_i ⋂ O| = %ld\n", c, clusterCost, points.size());
+        #endif
 
         if (points.size() == 0)
         {
@@ -171,12 +175,18 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
                 // Group 0 has no upper bound. Notice this can be written as two-liners,
                 // but is expanded to make it easier to read the code.
                 shouldAddPointsIntoGroup = clusterCost >= lowerBound;
+
+                #ifdef VERBOSE_DEBUG
                 printf("\n      Group j=%ld    lowerBoundCost=%0.4f\n", j, lowerBound);
+                #endif
             }
             else
             {
                 shouldAddPointsIntoGroup = clusterCost >= lowerBound && clusterCost < upperBound;
+
+                #ifdef VERBOSE_DEBUG
                 printf("\n      Group j=%ld    lowerBoundCost=%0.4f   upperBoundCost=%0.4f\n", j, lowerBound, upperBound);
+                #endif
             }
 
             if (shouldAddPointsIntoGroup)
@@ -184,7 +194,9 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
                 auto l = std::numeric_limits<int>().max();
                 auto group = groups->create(j, l, lowerBound, upperBound);
 
+                #ifdef VERBOSE_DEBUG
                 printf("            Adding %ld points to G[l=%d, j=%ld]\n", points.size(), l, j);
+                #endif
 
                 for (size_t i = 0; i < points.size(); i++)
                 {
@@ -198,21 +210,28 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
 
 void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<GroupSet> groups)
 {
+    printf("Grouping ring points...\n");
+    
     auto k = static_cast<double>(clusters.getNumberOfClusters());
     for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
     {
         double ringCost = rings->calcRingCost(l);
         size_t nRingPointsForAllClusters = rings->countRingPoints(l);
         size_t nGroupedPoints = 0;
+
+        #ifdef VERBOSE_DEBUG
         printf("\n\nRing l=%d   -  cost(R_l) = %0.4f   -   |R_l| = %ld\n", l, ringCost, nRingPointsForAllClusters);
+        #endif
 
         for (size_t c = 0; c < k; c++)
         {
             auto ring = rings->find(c, l);
             auto clusterCost = ring->getTotalCost();
             auto ringPoints = ring->getPoints();
-
+            
+            #ifdef VERBOSE_DEBUG
             printf("    Cluster i=%ld  - cost(R_{l,i}) = %0.4f     |R_{l,i}| = %ld\n", c, clusterCost, ring->countPoints());
+            #endif
 
             if (ring->countPoints() == 0)
             {
@@ -232,18 +251,26 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
                     // Group 0 has no upper bound. Notice this can be written as two-liners,
                     // but is expanded to make it easier to read the code.
                     shouldAddPointsIntoGroup = clusterCost >= lowerBound;
+                    
+                    #ifdef VERBOSE_DEBUG
                     printf("\n      Group j=%ld    lowerBoundCost=%0.4f\n", j, lowerBound, upperBound);
+                    #endif
                 }
                 else
                 {
                     shouldAddPointsIntoGroup = clusterCost >= lowerBound && clusterCost < upperBound;
+                    
+                    #ifdef VERBOSE_DEBUG
                     printf("\n      Group j=%ld    lowerBoundCost=%0.4f   upperBoundCost=%0.4f\n", j, lowerBound, upperBound);
+                    #endif
                 }
 
                 if (shouldAddPointsIntoGroup)
                 {
                     // Points which belong to cluster `c` and ring `l`
+                    #ifdef VERBOSE_DEBUG
                     printf("            Adding %ld points to G[l=%d, j=%ld]\n", ringPoints.size(), l, j);
+                    #endif
 
                     auto group = groups->create(j, l, lowerBound, upperBound);
                     for (size_t i = 0; i < ringPoints.size(); i++)
@@ -277,9 +304,11 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::Cluste
     auto totalCost = clusterAssignments.getTotalCost();
     auto k = clusterAssignments.getNumberOfClusters();
 
+    #ifdef VERBOSE_DEBUG
     printf("  Minimum size before sampling from any group is %ld...\n", minSamplingSize);
     printf("  cost(A) = %0.5f...\n", totalCost);
     printf("  T = %ld...\n", T);
+    #endif
 
     // The number of remaining points needed for the coreset.
     size_t T_remaining = T;
@@ -298,12 +327,17 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::Cluste
         auto normalizedGroupCost = groupCost / totalCost;
         auto numSamples = T * normalizedGroupCost;
 
+        #ifdef VERBOSE_DEBUG
         printf("\n    Group m=%ld:   |G_m|=%2ld   cost(G_m)=%2.4f   cost(G_m)/cost(A)=%0.4f   T_m=%0.5f \n",
                m, groupPoints.size(), group->calcTotalCost(), normalizedGroupCost, numSamples);
+        #endif
 
         if (numSamples < minSamplingSize)
         {
+            #ifdef VERBOSE_DEBUG
             printf("        Will not sample because T_m is below threshold...\n");
+            #endif
+
             for (size_t c = 0; c < k; c++)
             {
                 auto nPointsInCluster = group->countPointsInCluster(c);
@@ -316,7 +350,10 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::Cluste
         }
         else if (numSamples >= groupPoints.size())
         {
+            #ifdef VERBOSE_DEBUG
             printf("        Will not sample because T_m >= |G_m|.\n");
+            #endif
+
             for (size_t i = 0; i < groupPoints.size(); i++)
             {
                 coresetContainer->addPoint(groupPoints[i]->PointIndex, 1.0);
@@ -325,7 +362,10 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::Cluste
         }
         else
         {
+            #ifdef VERBOSE_DEBUG
             printf("        Will sample later.\n");
+            #endif
+
             samplingGroupIndices.push_back(m);
             samplingGroupTotalCost += groupCost;
         }
@@ -342,12 +382,17 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::Cluste
         auto numSamplesReal = T_remaining * normalizedGroupCost;
         auto numSamplesInt = random.stochasticRounding(numSamplesReal);
 
+        #ifdef VERBOSE_DEBUG
         printf("\n    Group m=%ld:   |G_m|=%2ld   cost(G_m)=%2.4f   cost(G_m)/cost(A)=%0.4f   T_m=%0.5f  round(T_m)=%ld \n",
                m, groupPoints.size(), group->calcTotalCost(), normalizedGroupCost, numSamplesReal, numSamplesInt);
+        #endif
 
         auto sampledPoints = random.choice(groupPoints, numSamplesInt);
 
+        #ifdef VERBOSE_DEBUG
         printf("        Sampled points from group:\n");
+        #endif
+        
         for (size_t i = 0; i < sampledPoints.size(); i++)
         {
             auto sampledPoint = sampledPoints[i];
