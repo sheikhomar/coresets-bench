@@ -249,7 +249,8 @@ class ExperimentRunner:
     def _get_next_run_file(self) -> Optional[Path]:
         file_paths = self._find_json_files(self._dir_ready)
         if len(file_paths) > 0:
-            return file_paths[0]
+            sorted_file_paths = list(sorted(file_paths, key=lambda file_path: file_path.name))
+            return sorted_file_paths[0]
         return None
     
     def _find_json_files(self, dir_name: str) -> List[Path]:
