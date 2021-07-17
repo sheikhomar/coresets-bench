@@ -235,8 +235,10 @@ namespace coresets
         {
             if (isCostWithinBounds(cost))
             {
+                #ifdef VERBOSE_DEBUG
                 printf("Ring Point %3ld with cost(p, A) = %0.4f  ->  R[%2d, %ld]  [%0.4f, %0.4f) \n",
                        pointIndex, cost, RangeValue, ClusterIndex, LowerBoundCost, UpperBoundCost);
+                #endif
 
                 points.push_back(std::make_shared<ClusteredPoint>(pointIndex, ClusterIndex, cost));
                 TotalCost += cost;
@@ -324,7 +326,9 @@ namespace coresets
             auto ring = find(clusterIndex, rangeValue);
             if (ring == nullptr)
             {
-                // printf("Ring for cluster=%ld and l=%2d not found. Creating...\n", clusterIndex, rangeValue);
+                #ifdef VERBOSE_DEBUG
+                printf("Ring for cluster=%ld and l=%2d not found. Creating...\n", clusterIndex, rangeValue);
+                #endif
                 ring = std::make_shared<Ring>(clusterIndex, rangeValue, averageClusterCost);
                 rings.push_back(ring);
             }
@@ -333,9 +337,11 @@ namespace coresets
 
         void addOvershotPoint(size_t pointIndex, size_t clusterIndex, double cost, double costBoundary)
         {
+            #ifdef VERBOSE_DEBUG
             printf("Overshot Point %3ld with cost(p, A) = %0.4f cluster(p)=%ld -> the cost(p, A) ",
                    pointIndex, cost, clusterIndex);
             printf("is above the cost range of outer most ring (%.4f)\n", costBoundary);
+            #endif
 
             auto point = std::make_shared<RinglessPoint>(pointIndex, clusterIndex, cost, costBoundary, true);
             overshotPoints.push_back(point);
@@ -343,9 +349,11 @@ namespace coresets
 
         void addShortfallPoint(size_t pointIndex, size_t clusterIndex, double cost, double costBoundary)
         {
+            #ifdef VERBOSE_DEBUG
             printf("Shortfall Point %3ld with cost(p, A) = %0.4f cluster(p)=%ld -> the cost(p, A) ",
                    pointIndex, cost, clusterIndex);
             printf("falls below the cost range of inner most ring (%.4f)\n", costBoundary);
+            #endif
 
             auto point = std::make_shared<RinglessPoint>(pointIndex, clusterIndex, cost, costBoundary, false);
             shortfallPoints.push_back(point);
