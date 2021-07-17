@@ -34,7 +34,7 @@ namespace utils
         getIndexer(size_t size);
 
         std::shared_ptr<blaze::DynamicVector<size_t>>
-        runWeightedReservoirSampling(const size_t k, const size_t n, blaze::DynamicVector<size_t> weights);
+        runWeightedReservoirSampling(const size_t k, blaze::DynamicVector<double> &weights);
 
         /**
          * @brief Randomly select `k` indices from an array of size `n` with replacement.

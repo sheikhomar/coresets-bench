@@ -49,9 +49,9 @@ Random::Random()
 }
 
 std::shared_ptr<blaze::DynamicVector<size_t>>
-Random::runWeightedReservoirSampling(const size_t k, const size_t n, blaze::DynamicVector<size_t> weights)
+Random::runWeightedReservoirSampling(const size_t k, blaze::DynamicVector<double> &weights)
 {
-    assert(weights.size() == n);
+    size_t n = weights.size();
 
     auto indexSampler = this->getIndexer(k);
     auto data = std::make_shared<blaze::DynamicVector<size_t>>(k);
