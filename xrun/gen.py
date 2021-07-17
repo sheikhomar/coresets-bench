@@ -21,6 +21,10 @@ MT_PATH = "mt/bin/mt.exe"
 
 
 def generate_random_seed() -> int:
+    # Calling mt.exe to generate a random seed quickly results 
+    # in the same random seed. So pause for a second for each
+    # generation.
+    time.sleep(1)
     p = subprocess.run([MT_PATH], stdout=subprocess.PIPE)
     return int(p.stdout)
 
@@ -90,13 +94,15 @@ def main(iter_start: int, iter_end: int, algorithms: List[str], force: bool) -> 
             for k in k_values:
                 for i in range(iter_start, iter_end+1):
                     m = 200 * k
+                    random_seed = generate_random_seed()
+                    print(f"Random seed {random_seed}")
                     exp_details = {
                         "iteration": i,
                         "algorithm": algo,
                         "dataset": dataset,
                         "k": k,
                         "m": m,
-                        "randomSeed": generate_random_seed(),
+                        "randomSeed": random_seed,
                     }
                     file_path = ready_dir / f"{i:03}-{dataset}-{algo}-k{k}-m{m}.json"
                     if force or not file_path.exists():
