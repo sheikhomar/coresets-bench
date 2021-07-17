@@ -97,9 +97,11 @@ class ExperimentRunner:
     _dir_in_progress = "data/queue/in-progress"
     _dir_completed = "data/queue/completed"
     _dir_discarded = "data/queue/discarded"
+    _dir_output = None
     _child_processes: List[subprocess.Popen] = []
 
-    def __init__(self) -> None:
+    def __init__(self, output_dir: str) -> None:
+        self._dir_output = output_dir
         for directory in [self._dir_ready, self._dir_in_progress, self._dir_completed, self._dir_discarded]:
             if not os.path.exists(directory):
                 print(f"Creating directory {directory}...")
@@ -219,7 +221,7 @@ class ExperimentRunner:
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
         experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        experiment_dir = f"data/experiments/{run.dataset}/{run.algorithm}-k{run.k}-m{run.m}/{experiment_no}"
+        experiment_dir = os.path.join(self._dir_output, f"{run.dataset}/{run.algorithm}-k{run.k}-m{run.m}/{experiment_no}")
         os.makedirs(experiment_dir)
         return Path(experiment_dir)
 
@@ -296,14 +298,23 @@ class ExperimentRunner:
 
 @click.command(help="Run experiments.")
 @click.option(
+    "-o",
+    "--output-dir",
+    type=click.STRING,
+    required=True,
+)
+@click.option(
     "-m",
     "--max-active",
     type=click.INT,
     default=1,
     help="Maximum number of simultaneous runs."
 )
-def main(max_active: int):
-    ExperimentRunner().run(max_active=max_active)
+def main(output_dir: str, max_active: int):
+    if not os.path.exists(output_dir):
+        print(f"The directory {output_dir} does not exist. Please provide an existing directory.")
+        return
+    ExperimentRunner(output_dir=output_dir).run(max_active=max_active)
 
 if __name__ == "__main__":
     main()  # pylint: disable=no-value-for-parameter
