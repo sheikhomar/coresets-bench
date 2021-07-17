@@ -29,11 +29,16 @@ cmake -S gs -B gs/build
 cmake --build gs/build
 ```
 
-
 ## Running Experiments
 
 ```bash
 pyenv install
 poetry install
 poetry run python -m xrun.go
+```
+
+Create conda environment:
+
+```bash
+conda env create -f environment.yml 
 ```
