@@ -180,6 +180,16 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
                 printf("\n      Group j=%ld    lowerBoundCost=%0.4f\n", j, lowerBound);
                 #endif
             }
+            else if (j == groups->GroupRangeSize-1)
+            {
+                // Group H has no lower bound.
+                // TODO: Not part of the original algorithm as described by Chris. Check with Chris.
+                shouldAddPointsIntoGroup = clusterCost < upperBound;
+                
+                #ifdef VERBOSE_DEBUG
+                printf("\n      Group j=%ld       upperBoundCost=%0.4f\n", j, upperBound);
+                #endif
+            }
             else
             {
                 shouldAddPointsIntoGroup = clusterCost >= lowerBound && clusterCost < upperBound;
@@ -211,7 +221,7 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
 void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<GroupSet> groups)
 {
     printf("Grouping ring points...\n");
-    
+
     auto k = static_cast<double>(clusters.getNumberOfClusters());
     for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
     {
@@ -259,7 +269,17 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
                     shouldAddPointsIntoGroup = clusterCost >= lowerBound;
                     
                     #ifdef VERBOSE_DEBUG
-                    printf("\n      Group j=%ld    lowerBoundCost=%0.4f\n", j, lowerBound, upperBound);
+                    printf("\n      Group j=%ld    lowerBoundCost=%0.4f\n", j, lowerBound);
+                    #endif
+                }
+                else if (j == groups->GroupRangeSize-1)
+                {
+                    // Group H has no lower bound.
+                    // TODO: Not part of the original algorithm as described by Chris. Check with Chris.
+                    shouldAddPointsIntoGroup = clusterCost < upperBound;
+                    
+                    #ifdef VERBOSE_DEBUG
+                    printf("\n      Group j=%ld       upperBoundCost=%0.4f\n", j, upperBound);
                     #endif
                 }
                 else
