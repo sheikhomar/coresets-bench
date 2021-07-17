@@ -35,9 +35,10 @@ SensitivitySampling::generateCoresetPoints(const clustering::ClusterAssignmentLi
     auto samplingDistribution = clusterAssignments.getNormalizedCosts();
 
     auto sampledIndices = random.choice(TargetSamplesInCoreset, samplingDistribution);
-    std::cout << "Sampled T points: \n"
-              << (*sampledIndices) << "\n";
+    // std::cout << "Sampled T points: \n"
+    //           << (*sampledIndices) << "\n";
 
+    std::cout << "Compute weights for sampled points.\n";
     // Loop through the sampled points and calculate
     // the weight associated with each of these points.
     for (size_t j = 0; j < TargetSamplesInCoreset; j++)
@@ -52,7 +53,7 @@ SensitivitySampling::generateCoresetPoints(const clustering::ClusterAssignmentLi
 
         coreset->addPoint(sampledPointIndex, weight);
 
-        printf("Sampled point %3ld gets weight %.5f \n", sampledPointIndex, weight);
+        // printf("Sampled point %3ld gets weight %.5f \n", sampledPointIndex, weight);
     }
 
     auto numberOfClusters = clusterAssignments.getNumberOfClusters();
@@ -91,12 +92,12 @@ SensitivitySampling::calcCenterWeights(
         // Compute cost(A)/(T*cost(p,A))
         double weightContributionOfP = sumOfCosts / (TargetSamplesInCoreset * costPOfA);
 
-        printf("Point %3ld contributes %.5f to cluster %ld  ", p, weightContributionOfP, clusterOfPointP);
+        // printf("Point %3ld contributes %.5f to cluster %ld  ", p, weightContributionOfP, clusterOfPointP);
 
         // Sum it up: sum_{p sampled and p in C_i}   cost(A)/(T*cost(p,A))
         (*centerWeights)[clusterOfPointP] += weightContributionOfP;
 
-        printf("  =>  w_%ld = %.5f\n", clusterOfPointP, (*centerWeights)[clusterOfPointP]);
+        // printf("  =>  w_%ld = %.5f\n", clusterOfPointP, (*centerWeights)[clusterOfPointP]);
     }
 
     printf("\n\n");
