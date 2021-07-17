@@ -12,6 +12,7 @@
 #include <clustering/cluster_assignment_list.hpp>
 #include <clustering/clustering_result.hpp>
 #include <utils/random.hpp>
+#include <utils/stop_watch.hpp>
 
 namespace clustering
 {

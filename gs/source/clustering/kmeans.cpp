@@ -58,6 +58,7 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
   size_t n = matrix.rows();
   size_t d = matrix.columns();
   size_t k = this->NumOfClusters;
+  utils::StopWatch sw(true);
 
   blaze::DynamicMatrix<double> pairwiseDist;
 
@@ -96,9 +97,12 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
   std::vector<size_t> pickedPointsAsCenters;
   pickedPointsAsCenters.reserve(k);
 
+  blaze::DynamicVector<double> weights(n);
+
   for (size_t c = 0; c < k; c++)
   {
     size_t centerIndex = 0;
+    utils::StopWatch pickCenterSW(true);
 
     if (c == 0)
     {
@@ -108,7 +112,8 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
     }
     else
     {
-      blaze::DynamicVector<double> weights(n);
+      weights.reset();
+
       for (size_t p1 = 0; p1 < n; p1++)
       {
         double smallestDistance = std::numeric_limits<double>::max();
@@ -143,9 +148,11 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       centerIndex = random.choice(weights);
     }
 
-    std::cout << "Center index for " << c << " => " << centerIndex << "\n";
+    std::cout << "Picked point " << centerIndex <<  " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << "\n";
     pickedPointsAsCenters.push_back(centerIndex);
   }
+
+  std::cout << "k-means++ initialization completed in " << sw.elapsedStr() << "\n";
 
   return pickedPointsAsCenters;
 }
@@ -166,6 +173,7 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
 
   for (size_t i = 0; i < this->MaxIterations; i++)
   {
+    utils::StopWatch iterSW(true);
     // For each data point, assign the centroid that is closest to it.
     for (size_t p = 0; p < n; p++)
     {
@@ -212,6 +220,8 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
       const auto count = std::max<size_t>(1, clusterMemberCounts[c]);
       blaze::row(centroids, c) /= count;
     }
+
+    std::cout << "Iteration " << (i+1) << " took " << iterSW.elapsedStr() << ". ";
 
     // Compute the Frobenius norm
     auto diffAbsMatrix = blaze::abs(centroids - oldCentrioids);
