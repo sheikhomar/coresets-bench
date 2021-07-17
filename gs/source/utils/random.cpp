@@ -88,10 +88,8 @@ Random::runWeightedReservoirSampling(const size_t k, const size_t n, blaze::Dyna
 }
 
 std::shared_ptr<blaze::DynamicVector<size_t>>
-Random::choice(const size_t k, const size_t n, blaze::DynamicVector<size_t> weights)
+Random::choice(const size_t k, blaze::DynamicVector<double> weights)
 {
-    assert(weights.size() == n);
-
     auto result = std::make_shared<blaze::DynamicVector<size_t>>(k);
     result->reset();
 

@@ -39,10 +39,10 @@ namespace utils
         /**
          * @brief Randomly select `k` indices from an array of size `n` with replacement.
          * @param k The number of indices to pick from.
-         * @param weight A collection of weights associated with each entry.
+         * @param weights A collection of weights associated with each entry.
          */
         std::shared_ptr<blaze::DynamicVector<size_t>>
-        choice(const size_t k, const size_t n, blaze::DynamicVector<size_t> weights);
+        choice(const size_t k, blaze::DynamicVector<double> weights);
 
         /**
          * @brief Randomly select an index using the given weights.
