@@ -32,8 +32,7 @@ SensitivitySampling::generateCoresetPoints(const clustering::ClusterAssignmentLi
     // Step 2c: compute the sampling distribution: cost(p, A)/cost(A)
     auto samplingDistribution = clusterAssignments.getNormalizedCosts();
 
-    // TODO: Investigate why small weights generate samples that are all zeros.
-    auto sampledIndices = random.choice(TargetSamplesInCoreset, n, samplingDistribution * 100);
+    auto sampledIndices = random.choice(TargetSamplesInCoreset, samplingDistribution);
     std::cout << "Sampled T points: \n"
               << (*sampledIndices) << "\n";
 

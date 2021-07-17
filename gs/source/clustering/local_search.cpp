@@ -127,7 +127,7 @@ resetIteration:
         // printf("Starting iteration %ld\n\n", iteration);
 
         auto costs = clusterAssignments.getCentroidDistances();
-        auto sampledPoints = random.choice(nSamples, n, costs); // TODO: Without replacement?
+        auto sampledPoints = random.choice(nSamples, costs); // TODO: Without replacement?
 
         // std::cout << "Sampled points: \n" << *sampledPoints << "\n";
 
