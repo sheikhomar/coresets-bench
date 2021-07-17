@@ -28,15 +28,15 @@ void Coreset::addPoint(size_t pointIndex, double weight)
     {
         coresetPoint = std::make_shared<WeightedPoint>(pointIndex, 0.0, false);
         this->points.push_back(coresetPoint);
-        printf("            Adding");
+        //printf("            Adding");
     }
     else
     {
-        printf("            Updating");
+        //printf("            Updating");
     }
 
     coresetPoint->Weight += weight;
-    printf(" point %ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
+    //printf(" point %ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
 }
 
 void Coreset::addCenter(size_t clusterIndex, double weight)
@@ -46,15 +46,15 @@ void Coreset::addCenter(size_t clusterIndex, double weight)
     {
         coresetPoint = std::make_shared<WeightedPoint>(clusterIndex, 0.0, true);
         this->points.push_back(coresetPoint);
-        printf("            Adding");
+        //printf("            Adding");
     }
     else
     {
-        printf("            Updating");
+        //printf("            Updating");
     }
     coresetPoint->Weight += weight;
 
-    printf(" center c_%ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
+    //printf(" center c_%ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
 }
 
 std::shared_ptr<WeightedPoint>
