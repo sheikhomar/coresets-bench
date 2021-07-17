@@ -1,12 +1,9 @@
 sudo apt-get update
 
 # Install libraries
-sudo apt-get install build-essential libblas-dev liblapack-dev libboost-all-dev libssl-dev g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev
-sudo apt-get install python-setuptools python-pip python-smbus
-sudo apt-get install libncursesw5-dev libgdbm-dev libc6-dev
-sudo apt-get install zlib1g-dev libsqlite3-dev tk-dev
-sudo apt-get install libssl-dev openssl
-sudo apt-get install libffi-dev
+sudo apt-get install -y build-essential libblas-dev liblapack-dev libssl-dev g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev checkinstall 
+sudo apt-get install -y python-setuptools python-pip python-smbus
+sudo apt-get install -y libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev wget curl llvm libncurses5-dev xz-utils tk-dev liblzma-dev python-openssl libreadline-dev libsqlite3-dev unixodbc-dev
 
 cd ~
 mkdir temp
