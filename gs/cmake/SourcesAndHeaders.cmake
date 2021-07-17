@@ -14,6 +14,7 @@ set(headers
     include/data/data_parser.hpp
     include/data/tower_parser.hpp
     include/utils/random.hpp
+    include/utils/stop_watch.hpp
 )
 
 set(sources
@@ -31,5 +32,6 @@ set(sources
     source/data/covertype_parser.cpp
     source/data/tower_parser.cpp
     source/utils/random.cpp
+    source/utils/stop_watch.cpp
     source/main.cpp
 )
