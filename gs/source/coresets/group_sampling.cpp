@@ -15,7 +15,9 @@ GroupSampling::run(const blaze::DynamicMatrix<double> &data)
 {
     clustering::KMeans kMeansAlg(this->NumberOfClusters);
     auto clusters = kMeansAlg.run(data);
-    return run(clusters);
+    auto coreset = run(clusters);
+    coreset->transfer(data, clusters->getCentroids());
+    return coreset;
 }
 
 std::shared_ptr<Coreset>
