@@ -39,3 +39,6 @@ target_include_directories(
 find_package(Boost 1.71.0 REQUIRED COMPONENTS iostreams)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${Boost_LIBRARIES})
+
+find_package(LAPACK REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE -llapack)
