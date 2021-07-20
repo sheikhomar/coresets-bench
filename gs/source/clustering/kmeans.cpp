@@ -76,9 +76,26 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
     pairwiseDist = h + blaze::trans(h) - 2 * M;
   }
 
+  blaze::DynamicVector<double> squaredNorms(n);
+  {
+    std::cout << "Computing squared norms!";
+    utils::StopWatch sw(true);
+    for (size_t i = 0; i < n; i++)
+    {
+      // Compute the dot product
+      double sumOfSquares = 0.0;
+      for (size_t j = 0; j < d; j++)
+      {
+        sumOfSquares += matrix.at(i, j) * matrix.at(i, j);
+      }
+      squaredNorms[i] = sumOfSquares;
+    }
+    std::cout << " Done  in " << sw.elapsedStr() << "\n";
+  }
+
   // Lambda function computes the squared L2 distance between any pair of points.
   // The function will automatically use any precomputed distance if it exists.
-  auto calcSquaredL2Norm = [matrix, pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
+  auto calcSquaredL2Norm = [matrix, squaredNorms, d, pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
   {
     if (p1 == p2)
     {
@@ -90,7 +107,13 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       return pairwiseDist.at(p1, p2);
     }
 
-    return blaze::sqrNorm(blaze::row(matrix, p1) - blaze::row(matrix, p2));
+    double dotProd = 0.0;
+    for (size_t i = 0; i < d; i++)
+    {
+      dotProd += matrix.at(p1, i) * matrix.at(p2, i);
+    }
+
+    return squaredNorms[p1] + squaredNorms[p2] - 2 * dotProd;
   };
 
   // Track which points are picked as centers.
@@ -148,7 +171,7 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       centerIndex = random.choice(weights);
     }
 
-    std::cout << "Picked point " << centerIndex <<  " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << "\n";
+    std::cout << "Picked point " << centerIndex << " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << "\n";
     pickedPointsAsCenters.push_back(centerIndex);
   }
 
@@ -221,7 +244,7 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
       blaze::row(centroids, c) /= count;
     }
 
-    std::cout << "Iteration " << (i+1) << " took " << iterSW.elapsedStr() << ". ";
+    std::cout << "Iteration " << (i + 1) << " took " << iterSW.elapsedStr() << ". ";
 
     // Compute the Frobenius norm
     auto diffAbsMatrix = blaze::abs(centroids - oldCentrioids);
