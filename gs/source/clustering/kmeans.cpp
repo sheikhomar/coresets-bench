@@ -51,6 +51,24 @@ KMeans::copyRows(const blaze::DynamicMatrix<double> &data, const std::vector<siz
   return centers;
 }
 
+void computeSquaredNorms(const blaze::DynamicMatrix<double> &dataPoints, std::vector<double> &squaredNorms)
+{
+  // std::cout << "Computing squared norms!";
+  // utils::StopWatch sw(true);
+
+  for (size_t i = 0; i < dataPoints.rows(); i++)
+  {
+    double sumOfSquares = 0.0;
+    for (size_t j = 0; j < dataPoints.columns(); j++)
+    {
+      sumOfSquares += dataPoints.at(i, j) * dataPoints.at(i, j);
+    }
+    squaredNorms[i] = sumOfSquares;
+  }
+
+  //std::cout << " Done  in " << sw.elapsedStr() << "\n";
+}
+
 std::vector<size_t>
 KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &matrix, const bool usePrecomputeDistances)
 {
@@ -183,8 +201,9 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
 std::shared_ptr<ClusteringResult>
 KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::DynamicMatrix<double> centroids)
 {
-  size_t n = matrix.rows();
-  size_t k = this->NumOfClusters;
+  const size_t n = matrix.rows();
+  const size_t d = matrix.columns();
+  const size_t k = this->NumOfClusters;
 
   blaze::DynamicVector<size_t> clusterMemberCounts(k);
   ClusterAssignmentList cal(n, k);
@@ -194,69 +213,96 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
     cal.assignAll(matrix, centroids);
   }
 
-  for (size_t i = 0; i < this->MaxIterations; i++)
+  if (MaxIterations > 0)
   {
-    utils::StopWatch iterSW(true);
-    // For each data point, assign the centroid that is closest to it.
-    for (size_t p = 0; p < n; p++)
+    std::vector<double> dataSquaredNorms;
+    dataSquaredNorms.resize(n);
+    computeSquaredNorms(matrix, dataSquaredNorms);
+
+    std::vector<double> centerSquaredNorms;
+    centerSquaredNorms.resize(centroids.rows());
+    computeSquaredNorms(centroids, centerSquaredNorms);
+
+    // Lambda function computes the squared L2 distance between any pair of points.
+    // The function will automatically use any precomputed distance if it exists.
+    auto calcSquaredL2Norm = [&matrix, &centroids, d, &dataSquaredNorms, &centerSquaredNorms](size_t p, size_t c) -> double
     {
-      double bestDistance = std::numeric_limits<double>::max();
-      size_t bestCluster = 0;
-
-      // Loop through all the clusters.
-      for (size_t c = 0; c < k; c++)
+      double dotProd = 0.0;
+      for (size_t i = 0; i < d; i++)
       {
-
-        // Compute the L2 norm between point p and centroid c.
-        const double distance = blaze::norm(blaze::row(matrix, p) - blaze::row(centroids, c));
-
-        // Decide if current distance is better.
-        if (distance < bestDistance)
-        {
-          bestDistance = distance;
-          bestCluster = c;
-        }
+        dotProd += matrix.at(p, i) * centroids.at(c, i);
       }
 
-      // Assign cluster to the point p.
-      cal.assign(p, bestCluster, bestDistance);
-    }
+      return dataSquaredNorms[p] + centerSquaredNorms[c] - 2 * dotProd;
+    };
 
-    // Move centroids based on the cluster assignments.
-
-    // First, save a copy of the centroids matrix.
-    blaze::DynamicMatrix<double> oldCentrioids(centroids);
-
-    // Set all elements to zero.
-    centroids = 0;           // Reset centroids.
-    clusterMemberCounts = 0; // Reset cluster member counts.
-
-    for (size_t p = 0; p < n; p++)
+    for (size_t i = 0; i < this->MaxIterations; i++)
     {
-      const size_t c = cal.getCluster(p);
-      blaze::row(centroids, c) += blaze::row(matrix, p);
-      clusterMemberCounts[c] += 1;
-    }
+      utils::StopWatch iterSW(true);
+      // For each data point, assign the centroid that is closest to it.
+      for (size_t p = 0; p < n; p++)
+      {
+        double bestDistance = std::numeric_limits<double>::max();
+        size_t bestCluster = 0;
 
-    for (size_t c = 0; c < k; c++)
-    {
-      const auto count = std::max<size_t>(1, clusterMemberCounts[c]);
-      blaze::row(centroids, c) /= count;
-    }
+        // Loop through all the clusters.
+        for (size_t c = 0; c < k; c++)
+        {
+          // Compute the L2 norm between point p and centroid c.
+          // const double distance = blaze::norm(blaze::row(matrix, p) - blaze::row(centroids, c));
+          const double distance = calcSquaredL2Norm(p, c);
 
-    std::cout << "Iteration " << (i + 1) << " took " << iterSW.elapsedStr() << ". ";
+          // Decide if current distance is better.
+          if (distance < bestDistance)
+          {
+            bestDistance = distance;
+            bestCluster = c;
+          }
+        }
 
-    // Compute the Frobenius norm
-    auto diffAbsMatrix = blaze::abs(centroids - oldCentrioids);
-    auto diffAbsSquaredMatrix = blaze::pow(diffAbsMatrix, 2); // Square each element.
-    auto frobeniusNormDiff = blaze::sqrt(blaze::sum(diffAbsSquaredMatrix));
+        // Assign cluster to the point p.
+        cal.assign(p, bestCluster, blaze::sqrt(bestDistance));
+      }
 
-    std::cout << "Frobenius norm of centroids difference: " << frobeniusNormDiff << "!\n";
+      // Move centroids based on the cluster assignments.
 
-    if (frobeniusNormDiff < this->ConvergenceDiff)
-    {
-      std::cout << "Stopping k-Means as centroids do not improve. Frobenius norm Diff: " << frobeniusNormDiff << "\n";
-      break;
+      // First, save a copy of the centroids matrix.
+      blaze::DynamicMatrix<double> oldCentrioids(centroids);
+
+      // Set all elements to zero.
+      centroids = 0;           // Reset centroids.
+      clusterMemberCounts = 0; // Reset cluster member counts.
+
+      for (size_t p = 0; p < n; p++)
+      {
+        const size_t c = cal.getCluster(p);
+        blaze::row(centroids, c) += blaze::row(matrix, p);
+        clusterMemberCounts[c] += 1;
+      }
+
+      for (size_t c = 0; c < k; c++)
+      {
+        const auto count = std::max<size_t>(1, clusterMemberCounts[c]);
+        blaze::row(centroids, c) /= count;
+      }
+
+      std::cout << "Iteration " << (i + 1) << " took " << iterSW.elapsedStr() << ". ";
+
+      // Recompute the squared distances again.
+      computeSquaredNorms(centroids, centerSquaredNorms);
+
+      // Compute the Frobenius norm
+      auto diffAbsMatrix = blaze::abs(centroids - oldCentrioids);
+      auto diffAbsSquaredMatrix = blaze::pow(diffAbsMatrix, 2); // Square each element.
+      auto frobeniusNormDiff = blaze::sqrt(blaze::sum(diffAbsSquaredMatrix));
+
+      std::cout << "Frobenius norm of centroids difference: " << frobeniusNormDiff << "!\n";
+
+      if (frobeniusNormDiff < this->ConvergenceDiff)
+      {
+        std::cout << "Stopping k-Means as centroids do not improve. Frobenius norm Diff: " << frobeniusNormDiff << "\n";
+        break;
+      }
     }
   }
 
