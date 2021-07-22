@@ -12,10 +12,37 @@
 #include <data/tower_parser.hpp>
 #include <utils/random.hpp>
 #include <utils/stop_watch.hpp>
+#include <blaze/Blaze.h>
 
 using namespace std;
 using namespace clustering;
 using namespace data;
+
+void svd() 
+{
+  auto parser = BagOfWordsParser();
+  utils::StopWatch timeDataParsing(true);
+  auto data = parser.parse("/home/omar/code/coresets-bench/data/input/docword.enron.txt.gz");
+
+  std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
+
+  utils::StopWatch svdTime(true);
+  //blaze::DynamicMatrix<double, blaze::rowMajor> A = *data;
+
+  blaze::DynamicMatrix<double, blaze::rowMajor>     U;  // The matrix for the left singular vectors
+  blaze::DynamicVector<double, blaze::columnVector> s;  // The vector for the singular values
+  blaze::DynamicMatrix<double, blaze::rowMajor>     V;  // The matrix for the right singular vectors
+
+  blaze::svd(*data, U, s, V );  // (3) Computing the singular values and vectors of A
+
+  std::cout << "SVD completed in "<< svdTime.elapsedStr() << ".\n";
+
+  std::cout << "Storing SVD components..\n";
+  blaze::Archive<std::ofstream> archive("/home/omar/code/coresets-bench/data/input/docword.enron.svd.blaze");
+  archive << U << s << V;
+
+  std::cout << "Done!";
+}
 
 void writeDoneFile(const std::string &outputDir)
 {
