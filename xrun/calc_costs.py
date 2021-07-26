@@ -124,7 +124,7 @@ def load_raw_data(coreset_file_path: Path):
     loaders = {
         "census": load_census_data,
         "tower": load_tower_dataset,
-        "covertype": load_tower_dataset
+        "covertype": load_covertype_dataset
     }
 
     if dataset not in loaders:
