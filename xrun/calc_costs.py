@@ -106,7 +106,7 @@ def main(results_dir: str) -> None:
     total_files = len(output_paths)
     for index, file_path in enumerate(output_paths):
         print(f"Processing file {index+1} of {total_files}...")
-        data_file_path = unzip_file(output_paths[0])
+        data_file_path = unzip_file(file_path)
         centers_file_path = compute_centers(data_file_path)
         cost_file_path = compute_weighted_cost(data_file_path, centers_file_path)
 
