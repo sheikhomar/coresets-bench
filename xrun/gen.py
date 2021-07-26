@@ -24,6 +24,8 @@ def generate_random_seed() -> int:
     # Calling mt.exe to generate a random seed quickly results 
     # in the same random seed. So pause for a second for each
     # generation.
+    if not os.path.exists(MT_PATH):
+        raise Exception(f"Random seed generator '{MT_PATH}' cannot be found. You can build it: make -C mt")
     time.sleep(1)
     p = subprocess.run([MT_PATH], stdout=subprocess.PIPE)
     return int(p.stdout)
