@@ -103,7 +103,7 @@ def load_tower_dataset():
 
 
 def load_covertype_dataset():
-    file_path = Path("../data/input/covtype.data.gz")
+    file_path = Path("data/input/covtype.data.gz")
     print(f"Loading Covertype dataset from {file_path}...")
     start_time = timer()
     data = np.loadtxt(
@@ -131,7 +131,6 @@ def load_raw_data(coreset_file_path: Path):
         raise Exception(f"Unknown loader for dataset {dataset}.")
 
     if dataset not in datasets:
-        print(f"Loading raw data...")
         datasets[dataset] = loaders[dataset]()
 
     return datasets[dataset]
