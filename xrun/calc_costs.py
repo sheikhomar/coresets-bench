@@ -67,15 +67,83 @@ def compute_centers(result_file_path: Path) -> Path:
     return center_path
 
 
+def load_census_data():
+    file_path = Path("data/input/USCensus1990.data.txt")
+    print(f"Loading Census data from {file_path}...")
+    start_time = timer()
+    data = np.loadtxt(
+        fname=file_path,
+        dtype=np.double,
+        delimiter=",",
+        skiprows=1,
+        unpack=False
+    )
+    end_time = timer()
+    print(f"Loaded in {end_time - start_time:.2f} secs")
+    return data[:,1:]
+
+
+def load_tower_dataset():
+    file_path = Path("data/input/Tower.txt")
+    print(f"Loading Tower dataset from {file_path}...")
+    start_time = timer()
+    data = np.loadtxt(
+        fname=file_path,
+        dtype=np.double,
+        delimiter=",",
+        skiprows=0,
+        unpack=False
+    )
+    end_time = timer()
+    print(f"Loaded in {end_time - start_time:.2f} secs")
+    
+    D = 3
+    N = int(data.shape[0] / D)
+    return data.reshape((N, D))
+
+
+def load_covertype_dataset():
+    file_path = Path("../data/input/covtype.data.gz")
+    print(f"Loading Covertype dataset from {file_path}...")
+    start_time = timer()
+    data = np.loadtxt(
+        fname=file_path,
+        dtype=np.double,
+        delimiter=",",
+        skiprows=0,
+        unpack=False
+    )
+    end_time = timer()
+    print(f"Loaded in {end_time - start_time:.2f} secs")
+    return data[:, 1:] # Skip first column
+
+datasets = dict()
+
+def load_raw_data(coreset_file_path: Path):
+    dataset, algorithm, k = re.findall(r"/.+/(.+)/(.+)-k(\d+)-", str(coreset_file_path))[0]
+    loaders = {
+        "census": load_census_data,
+        "tower": load_tower_dataset,
+        "covertype": load_tower_dataset
+    }
+
+    if dataset not in loaders:
+        raise Exception(f"Unknown loader for dataset {dataset}.")
+
+    if dataset not in datasets:
+        print(f"Loading raw data...")
+        datasets[dataset] = loaders[dataset]()
+
+    return datasets[dataset]
+
+
 def compute_weighted_cost(data_file_path: Path, centers_file_path: Path) -> Path:
     cost_file_path = data_file_path.parent / "weighted_cost.txt"
     if cost_file_path.exists():
         return cost_file_path
 
     print("Computing weighted cost...")
-    data = np.loadtxt(fname=data_file_path, dtype=np.double, delimiter=' ', skiprows=1)
-    data_weights = data[:,0]
-    data_points = data[:,1:]
+    data_points = load_raw_data(data_file_path)
 
     centers = np.loadtxt(fname=centers_file_path, dtype=np.double, delimiter=' ', skiprows=0)
     center_weights = centers[:,0] 
@@ -88,7 +156,7 @@ def compute_weighted_cost(data_file_path: Path, centers_file_path: Path) -> Path
     dist_closest_centers = np.min(D, axis=1)
 
     # Weigh the distances and sum it all up
-    weighted_cost = np.sum(data_weights * dist_closest_centers)
+    weighted_cost = np.sum(dist_closest_centers)
 
     print(f"Computed weighted cost: {weighted_cost}")
     
