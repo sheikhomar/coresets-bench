@@ -50,8 +50,6 @@ def compute_centers(result_file_path: Path) -> Path:
     d = len(line2.split(" ")) - 1  
     k = int(re.findall(r'-k(\d+)-', str(result_file_path))[0])
     random_seed = generate_random_seed()
-    
-
     command = [
         KMEANS_PATH,
         str(result_file_path),
