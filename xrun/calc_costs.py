@@ -34,6 +34,10 @@ def unzip_file(input_path: Path) -> Path:
 
 
 def compute_centers(result_file_path: Path) -> Path:
+    center_path = result_file_path.parent / "centers.txt"
+    if center_path.exists():
+        return center_path
+
     if not os.path.exists(KMEANS_PATH):
         raise Exception(f"Program '{KMEANS_PATH}' cannot be found. You can build it: make -C kmeans")
 
@@ -46,7 +50,7 @@ def compute_centers(result_file_path: Path) -> Path:
     d = len(line2.split(" ")) - 1  
     k = int(re.findall(r'-k(\d+)-', str(result_file_path))[0])
     random_seed = generate_random_seed()
-    center_path = result_file_path.parent / "centers.txt"
+    
 
     command = [
         KMEANS_PATH,
@@ -66,6 +70,10 @@ def compute_centers(result_file_path: Path) -> Path:
 
 
 def compute_weighted_cost(data_file_path: Path, centers_file_path: Path) -> Path:
+    cost_file_path = data_file_path.parent / "weighted_cost.txt"
+    if cost_file_path.exists():
+        return cost_file_path
+
     print("Computing weighted cost...")
     data = np.loadtxt(fname=data_file_path, dtype=np.double, delimiter=' ', skiprows=1)
     data_weights = data[:,0]
@@ -86,7 +94,6 @@ def compute_weighted_cost(data_file_path: Path, centers_file_path: Path) -> Path
 
     print(f"Computed weighted cost: {weighted_cost}")
     
-    cost_file_path = data_file_path.parent / "weighted_cost.txt"
     with open(cost_file_path, "w") as f:
         f.write(str(weighted_cost))
     return cost_file_path
