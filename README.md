@@ -22,6 +22,12 @@ The MT project can be built with Make:
 make -C mt
 ```
 
+The k-means++ tool can be built with Make:
+
+```bash
+make -C kmeans
+```
+
 The GS project can be built with CMake:
 
 ```bash
