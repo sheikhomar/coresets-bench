@@ -104,7 +104,7 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
 
   // Lambda function computes the squared L2 distance between any pair of points.
   // The function will automatically use any precomputed distance if it exists.
-  auto calcSquaredL2Norm = [matrix, dataSquaredNorms, d, pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
+  auto calcSquaredL2Norm = [&matrix, &dataSquaredNorms, d, &pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
   {
     if (p1 == p2)
     {
