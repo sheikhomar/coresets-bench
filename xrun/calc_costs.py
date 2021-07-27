@@ -115,7 +115,7 @@ def load_covertype_dataset():
     )
     end_time = timer()
     print(f"Loaded in {end_time - start_time:.2f} secs")
-    return data[:, 1:] # Skip first column
+    return data[:, 0:-1] # Skip the last column which is the classification column
 
 datasets = dict()
 
