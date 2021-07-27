@@ -1,5 +1,5 @@
 import os, requests, subprocess, json, shutil, time
-from typing import List
+from typing import List, Optional
 from timeit import default_timer as timer
 
 from dataclasses import dataclass
@@ -15,6 +15,13 @@ KNOWN_ALGORITHMS = [
     "sensitivity-sampling",
     "group-sampling",
     "bico",
+]
+
+KNOWN_DATASETS = [
+    "covertype",
+    "census",
+    "tower",
+    "enron"
 ]
 
 MT_PATH = "mt/bin/mt.exe"
@@ -46,6 +53,26 @@ def validate_algorithms(ctx, param, value):
             ret_val.append("group-sampling")
         elif s in ["bico"]:
             ret_val.append("bico")
+        else:
+            raise Exception(f"Known algorithm: {s}")
+    return ret_val
+
+
+def validate_datasets(ctx, param, value):
+    if value is None or value == "all":
+        return KNOWN_DATASETS
+    ret_val = []
+    for s in value.split(","):
+        if s in ["en", "enron"]:
+            ret_val.append("enron")
+        elif s in ["cov", "covertype"]:
+            ret_val.append("covertype")
+        elif s in ["cen", "census"]:
+            ret_val.append("census")
+        elif s in ["t", "to", "tower"]:
+            ret_val.append("tower")
+        else:
+            raise Exception(f"Known dataset: {s}")
     return ret_val
         
 
@@ -60,7 +87,8 @@ def validate_algorithms(ctx, param, value):
     "-e",
     "--iter-end",
     type=click.INT,
-    required=True,
+    default=-1,
+    required=False,
 )
 @click.option(
     "-a",
@@ -71,15 +99,26 @@ def validate_algorithms(ctx, param, value):
     callback=validate_algorithms
 )
 @click.option(
+    "-d",
+    "--datasets",
+    type=click.STRING,
+    required=False,
+    default=None,
+    callback=validate_datasets
+)
+@click.option(
     "--force",
     "-f",
     is_flag=True,
     help="Recreate files."
 )
-def main(iter_start: int, iter_end: int, algorithms: List[str], force: bool) -> None:
+def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datasets: List[str], force: bool) -> None:
     if not os.path.exists(MT_PATH):
         print(f"Random seed generator '{MT_PATH}' cannot be found. You can build it: make -C mt")
         return
+    
+    if iter_end is None or iter_end < iter_start:
+        iter_end = iter_start
 
     dataset_k_ranges = {
         "census": [10, 20, 30, 40, 50],
@@ -92,6 +131,8 @@ def main(iter_start: int, iter_end: int, algorithms: List[str], force: bool) -> 
     if not ready_dir.exists():
         os.makedirs(ready_dir)
     for dataset, k_values in dataset_k_ranges.items():
+        if dataset not in datasets:
+            continue
         for algo in algorithms:
             for k in k_values:
                 for i in range(iter_start, iter_end+1):
