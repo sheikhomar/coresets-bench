@@ -55,13 +55,17 @@ void computeSquaredNorms(const blaze::DynamicMatrix<double> &dataPoints, std::ve
 {
   // std::cout << "Computing squared norms!";
   // utils::StopWatch sw(true);
-
+  double val = 0.0;
   for (size_t i = 0; i < dataPoints.rows(); i++)
   {
     double sumOfSquares = 0.0;
     for (size_t j = 0; j < dataPoints.columns(); j++)
     {
-      sumOfSquares += dataPoints.at(i, j) * dataPoints.at(i, j);
+      val = dataPoints.at(i, j);
+      if (val != 0.0)
+      {
+        sumOfSquares += val * val;
+      }
     }
     squaredNorms[i] = sumOfSquares;
   }
@@ -94,26 +98,13 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
     pairwiseDist = h + blaze::trans(h) - 2 * M;
   }
 
-  blaze::DynamicVector<double> squaredNorms(n);
-  {
-    std::cout << "Computing squared norms!";
-    utils::StopWatch sw(true);
-    for (size_t i = 0; i < n; i++)
-    {
-      // Compute the dot product
-      double sumOfSquares = 0.0;
-      for (size_t j = 0; j < d; j++)
-      {
-        sumOfSquares += matrix.at(i, j) * matrix.at(i, j);
-      }
-      squaredNorms[i] = sumOfSquares;
-    }
-    std::cout << " Done  in " << sw.elapsedStr() << "\n";
-  }
+  std::vector<double> dataSquaredNorms;
+  dataSquaredNorms.resize(n);
+  computeSquaredNorms(matrix, dataSquaredNorms);
 
   // Lambda function computes the squared L2 distance between any pair of points.
   // The function will automatically use any precomputed distance if it exists.
-  auto calcSquaredL2Norm = [matrix, squaredNorms, d, pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
+  auto calcSquaredL2Norm = [matrix, dataSquaredNorms, d, pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
   {
     if (p1 == p2)
     {
@@ -125,13 +116,18 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       return pairwiseDist.at(p1, p2);
     }
 
-    double dotProd = 0.0;
+    double dotProd = 0.0, val1 = 0.0, val2 = 0.0;
     for (size_t i = 0; i < d; i++)
     {
-      dotProd += matrix.at(p1, i) * matrix.at(p2, i);
+      val1 = matrix.at(p1, i);
+      val2 = matrix.at(p2, i);
+      if (val1 != 0.0 && val2 != 0.0) // Only compute for non-zero
+      {
+        dotProd += val1 * val2;
+      }
     }
 
-    return squaredNorms[p1] + squaredNorms[p2] - 2 * dotProd;
+    return dataSquaredNorms[p1] + dataSquaredNorms[p2] - 2 * dotProd;
   };
 
   // Track which points are picked as centers.
