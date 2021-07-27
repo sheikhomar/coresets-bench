@@ -135,10 +135,14 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
   pickedPointsAsCenters.reserve(k);
 
   blaze::DynamicVector<double> weights(n);
+  for (size_t p1 = 0; p1 < n; p1++)
+  {
+    weights[p1] = std::numeric_limits<double>::max();
+  }
 
+  size_t centerIndex = 0;
   for (size_t c = 0; c < k; c++)
   {
-    size_t centerIndex = 0;
     utils::StopWatch pickCenterSW(true);
 
     if (c == 0)
@@ -149,37 +153,23 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
     }
     else
     {
-      weights.reset();
-
       for (size_t p1 = 0; p1 < n; p1++)
       {
-        double smallestDistance = std::numeric_limits<double>::max();
+        // Compute dist2(p, C_k)
+        double distance = calcSquaredL2Norm(p1, centerIndex);
 
-        // Loop through previously selected clusters.
-        for (size_t p2 : pickedPointsAsCenters)
+        // Compute min_dist^2(p, C_k-1)
+        // Decide if current distance is better.
+        if (distance < weights[p1])
         {
-          // Notice that for points previously picked as centers, their
-          // distances will be zero because the diagonal elements of the
-          // pairwise distance matrix are all zeros: D^2[i,i] = 0.
-          double distance = calcSquaredL2Norm(p1, p2);
-
-          // Decide if current distance is better.
-          if (distance < smallestDistance)
-          {
-            smallestDistance = distance;
-          }
+          // Set the weight of a given point to be the smallest distance
+          // to any of the previously selected center points. We want to
+          // select points randomly such that points that are far from
+          // any of the selected center points have higher likelihood of
+          // being picked as the next candidate center.
+          weights[p1] = distance;
         }
-
-        // Set the weight of a given point to be the smallest distance
-        // to any of the previously selected center points. We want to
-        // select points randomly such that points that are far from
-        // any of the selected center points have higher likelihood of
-        // being picked as the next candidate center.
-        weights[p1] = smallestDistance;
       }
-
-      // Normalise the weights.
-      weights /= blaze::sum(weights);
 
       // Pick the index of a point randomly selected based on the weights.
       centerIndex = random.choice(weights);
@@ -292,7 +282,7 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
       auto diffAbsSquaredMatrix = blaze::pow(diffAbsMatrix, 2); // Square each element.
       auto frobeniusNormDiff = blaze::sqrt(blaze::sum(diffAbsSquaredMatrix));
 
-      std::cout << "Frobenius norm of centroids difference: " << frobeniusNormDiff << "!\n";
+      std::cout << "Frobenius norm of centroids difference: " << frobeniusNormDiff << "!" << std::endl;
 
       if (frobeniusNormDiff < this->ConvergenceDiff)
       {
