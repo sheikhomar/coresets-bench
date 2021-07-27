@@ -42,13 +42,13 @@ namespace utils
          * @param weights A collection of weights associated with each entry.
          */
         std::shared_ptr<blaze::DynamicVector<size_t>>
-        choice(const size_t k, blaze::DynamicVector<double> weights);
+        choice(const size_t k, blaze::DynamicVector<double> &weights);
 
         /**
          * @brief Randomly select an index using the given weights.
          */
         size_t
-        choice(blaze::DynamicVector<double> weights);
+        choice(blaze::DynamicVector<double> &weights);
 
         /**
          * @brief Select a number of elements from vector uniformly at random.
