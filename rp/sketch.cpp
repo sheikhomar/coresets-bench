@@ -37,73 +37,74 @@
  */
 #define BCHDOMAIN ((1U << 31) - 1)
 
-typedef struct {
-  unsigned int deg;  /* degree of independence */
-  unsigned int k;    /* number of seeds */
-  uint_fast64_t s0;  /* extra bit */
-  uint_fast64_t *S;  /* array of k full seeds */
+typedef struct
+{
+    unsigned int deg; /* degree of independence */
+    unsigned int k;   /* number of seeds */
+    uint_fast64_t s0; /* extra bit */
+    uint_fast64_t *S; /* array of k full seeds */
 } BCH_conf;
 
 class Matrix : boost::noncopyable
 {
 private:
-  double *_entries;
-  size_t _nRows;
-  size_t _nColumns;
-  size_t _totalSize;
-  bool allocated = false;
+    double *_entries;
+    size_t _nRows;
+    size_t _nColumns;
+    size_t _totalSize;
+    bool allocated = false;
 
 public:
-  Matrix() { }
-  Matrix(size_t rows, size_t columns)
-  {
-    allocate(rows, columns);
-  }
-
-  void deallocate()
-  {
-    if (this->allocated)
+    Matrix() {}
+    Matrix(size_t rows, size_t columns)
     {
-      std::free(this->_entries);
-      this->_nRows = 0;
-      this->_nColumns = 0;
-      this->_totalSize = 0;
-      this->allocated = false;
+        allocate(rows, columns);
     }
-  }
 
-  void allocate(size_t rows, size_t columns)
-  {
-    deallocate();
-
-    std::cout << "Allocing memory for matrix: " << rows << "x" << columns <<".\n";
-    size_t totalSize = rows * columns * sizeof(double);
-    this->_entries = reinterpret_cast<double*>(std::malloc(totalSize));
-    this->_nRows = rows;
-    this->_nColumns = columns;
-    this->_totalSize = totalSize;
-    this->allocated = true;
-  }
-
-  void set(size_t rowIndex, size_t columnIndex, double value)
-  {
-    size_t index = rowIndex * this->_nColumns + columnIndex;
-    if (index > this->_totalSize)
+    void deallocate()
     {
-      throw std::invalid_argument("Index out of bounds.");
+        if (this->allocated)
+        {
+            std::free(this->_entries);
+            this->_nRows = 0;
+            this->_nColumns = 0;
+            this->_totalSize = 0;
+            this->allocated = false;
+        }
     }
-    this->_entries[index] = value;
-  }
 
-  double *data() const { return this->_entries; }
-  size_t rows() const { return this->_nRows; }
-  size_t columns() const { return this->_nColumns; }
-  size_t size() const { return this->_totalSize; }
+    void allocate(size_t rows, size_t columns)
+    {
+        deallocate();
 
-  ~Matrix()
-	{
-    deallocate();
-	}
+        std::cout << "Allocing memory for matrix: " << rows << "x" << columns << ".\n";
+        size_t totalSize = rows * columns * sizeof(double);
+        this->_entries = reinterpret_cast<double *>(std::malloc(totalSize));
+        this->_nRows = rows;
+        this->_nColumns = columns;
+        this->_totalSize = totalSize;
+        this->allocated = true;
+    }
+
+    void set(size_t rowIndex, size_t columnIndex, double value)
+    {
+        size_t index = rowIndex * this->_nColumns + columnIndex;
+        if (index > this->_totalSize)
+        {
+            throw std::invalid_argument("Index out of bounds.");
+        }
+        this->_entries[index] = value;
+    }
+
+    double *data() const { return this->_entries; }
+    size_t rows() const { return this->_nRows; }
+    size_t columns() const { return this->_nColumns; }
+    size_t size() const { return this->_totalSize; }
+
+    ~Matrix()
+    {
+        deallocate();
+    }
 };
 
 static BCH_conf bch_configure(unsigned int deg);
@@ -112,17 +113,17 @@ static double bch4_gen(uint_fast64_t idx, BCH_conf c);
 static int bin_search(int val, const int *p, int k);
 static uint_fast64_t lcg_init();
 static void matprod_block(double *x, int nrx, int ncx,
-			  double *y, int nry, int ncy, int ory, double *z);
+                          double *y, int nry, int ncy, int ory, double *z);
 static void matprod_block_xrm(double *x, int nrx, int ncx,
-			      double *y, int nry, int ncy, int ory, double *z);
+                              double *y, int nry, int ncy, int ory, double *z);
 static uint_fast64_t ruint();
 static void sample_int(int n, int max, int *out);
 // SEXP sketch_cw(SEXP data, SEXP sketch_rows);
 // SEXP sketch_rad(SEXP data, SEXP sketch_rows);
 // SEXP sketch_srht(SEXP data, SEXP sketch_rows);
 static void srht_rec(const int *p, int k, int q,
-		     double *data, int d_rows, int d_cols, int d_offset,
-		     double *res, int r_rows, int r_offset);
+                     double *data, int d_rows, int d_cols, int d_offset,
+                     double *res, int r_rows, int r_offset);
 
 /* register .Call entrypoints with R */
 // static const R_CallMethodDef CallEntries[] = {
@@ -130,7 +131,7 @@ static void srht_rec(const int *p, int k, int q,
 //   {"sketch_rad",  (DL_FUNC) &sketch_rad,  2},
 //   {"sketch_srht", (DL_FUNC) &sketch_srht, 2},
 //   {NULL, NULL, 0}
-// };					      
+// };
 
 // void
 // R_init_RaProR(DllInfo *dll)
@@ -139,16 +140,16 @@ static void srht_rec(const int *p, int k, int q,
 //   R_useDynamicSymbols(dll, FALSE);
 // }
 
-void*
+void *
 R_alloc(size_t nElements, size_t typeSize)
 {
-  return std::malloc(nElements * typeSize);
+    return std::malloc(nElements * typeSize);
 }
 
 // Seeder produces uniformly-distributed unsigned integers with 32 bits of length.
 // The entropy of the random_device may be lower than 32 bits.
 // It is not a good idea to use std::random_device repeatedly as this may
-// deplete the entropy in the system. It relies on system calls which makes it a very slow. 
+// deplete the entropy in the system. It relies on system calls which makes it a very slow.
 // Ref: https://diego.assencio.com/?index=6890b8c50169ef45b74db135063c227c
 std::random_device seeder;
 std::mt19937 engine(seeder());
@@ -156,86 +157,87 @@ std::mt19937 engine(seeder());
 double
 runif(double lower, double upper)
 {
-  std::uniform_real_distribution<double> gen(lower, upper);
-  return gen(engine);
+    std::uniform_real_distribution<double> gen(lower, upper);
+    return gen(engine);
 }
 
 double
 unif_rand()
 {
-  return runif(0.0, 1.0);
+    return runif(0.0, 1.0);
 }
 
 BCH_conf
-bch_configure (unsigned int deg)
+bch_configure(unsigned int deg)
 {
-  BCH_conf c;
-  unsigned int i;
+    BCH_conf c;
+    unsigned int i;
 
-  c.deg = deg;
-  c.k = deg / 2;
-  c.s0 = deg % 2 ? ruint() % 2 : 0;
-  c.S = (uint_fast64_t *) R_alloc(c.k, sizeof(uint_fast64_t));
-  for (i = 0; i < c.k; i++)
-    c.S[i] = ruint();
-  return(c);
+    c.deg = deg;
+    c.k = deg / 2;
+    c.s0 = deg % 2 ? ruint() % 2 : 0;
+    c.S = (uint_fast64_t *)R_alloc(c.k, sizeof(uint_fast64_t));
+    for (i = 0; i < c.k; i++)
+        c.S[i] = ruint();
+    return (c);
 }
 
 double
 bch_gen(uint_fast64_t idx, BCH_conf c)
 {
-  uint_fast64_t idx_pow = idx;
-  uint_fast64_t dp_acc = c.s0;
-  uint_fast64_t dp = 0;
-  unsigned int i;
+    uint_fast64_t idx_pow = idx;
+    uint_fast64_t dp_acc = c.s0;
+    uint_fast64_t dp = 0;
+    unsigned int i;
 
-  if (idx > BCHDOMAIN)
-    throw std::invalid_argument("bch_gen: invalid index");
-  for (i = 0; i < c.k; ++i) {
-    dp = c.S[i] & idx_pow;
-    /* calculate parity via Hamming weight (cf. Wikipedia) */
-    /* while gcc has __builtin_parityll(), we don't use it for portability */
-    dp -= (dp >> 1) & 0x5555555555555555;
-    dp = (dp & 0x3333333333333333) + ((dp >> 2) & 0x3333333333333333);
-    dp = (dp + (dp >> 4)) & 0x0f0f0f0f0f0f0f0f;
-    dp = (dp * 0x0101010101010101) >> 56;
-    /* parity: last bit of Hamming weight */
-    dp = dp & 1;
-    dp_acc = dp_acc ^ dp;
-    /* next index, multiply by idx * idx, keep only bits in BCHDOMAIN */
-    idx_pow = (((idx_pow * idx) & BCHDOMAIN) * idx_pow) & BCHDOMAIN;
-  }
-  return ((double) dp_acc) * 2 - 1;
+    if (idx > BCHDOMAIN)
+        throw std::invalid_argument("bch_gen: invalid index");
+    for (i = 0; i < c.k; ++i)
+    {
+        dp = c.S[i] & idx_pow;
+        /* calculate parity via Hamming weight (cf. Wikipedia) */
+        /* while gcc has __builtin_parityll(), we don't use it for portability */
+        dp -= (dp >> 1) & 0x5555555555555555;
+        dp = (dp & 0x3333333333333333) + ((dp >> 2) & 0x3333333333333333);
+        dp = (dp + (dp >> 4)) & 0x0f0f0f0f0f0f0f0f;
+        dp = (dp * 0x0101010101010101) >> 56;
+        /* parity: last bit of Hamming weight */
+        dp = dp & 1;
+        dp_acc = dp_acc ^ dp;
+        /* next index, multiply by idx * idx, keep only bits in BCHDOMAIN */
+        idx_pow = (((idx_pow * idx) & BCHDOMAIN) * idx_pow) & BCHDOMAIN;
+    }
+    return ((double)dp_acc) * 2 - 1;
 }
 
 /* unrolled version for 4-wise independence */
 double
 bch4_gen(uint_fast64_t idx, BCH_conf c)
 {
-  uint_fast64_t dp_acc = 0;
-  uint_fast64_t dp = 0;
+    uint_fast64_t dp_acc = 0;
+    uint_fast64_t dp = 0;
 
-  if (idx > BCHDOMAIN)
-    throw std::invalid_argument("bch4_gen: invalid index");
+    if (idx > BCHDOMAIN)
+        throw std::invalid_argument("bch4_gen: invalid index");
 
-  /* 1st seed */
-  dp = c.S[0] & idx;
-  dp -= (dp >> 1) & 0x5555555555555555;
-  dp = (dp & 0x3333333333333333) + ((dp >> 2) & 0x3333333333333333);
-  dp = (dp + (dp >> 4)) & 0x0f0f0f0f0f0f0f0f;
-  dp = (dp * 0x0101010101010101) >> 56;
-  dp = dp & 1;
-  dp_acc = dp_acc ^ dp;
-  idx = (((idx * idx) & BCHDOMAIN) * idx) & BCHDOMAIN;
-  /* 2nd seed */
-  dp = c.S[1] & idx;
-  dp -= (dp >> 1) & 0x5555555555555555;
-  dp = (dp & 0x3333333333333333) + ((dp >> 2) & 0x3333333333333333);
-  dp = (dp + (dp >> 4)) & 0x0f0f0f0f0f0f0f0f;
-  dp = (dp * 0x0101010101010101) >> 56;
-  dp = dp & 1;
-  dp_acc = dp_acc ^ dp;
-  return ((double) dp_acc) * 2.0 - 1.0;
+    /* 1st seed */
+    dp = c.S[0] & idx;
+    dp -= (dp >> 1) & 0x5555555555555555;
+    dp = (dp & 0x3333333333333333) + ((dp >> 2) & 0x3333333333333333);
+    dp = (dp + (dp >> 4)) & 0x0f0f0f0f0f0f0f0f;
+    dp = (dp * 0x0101010101010101) >> 56;
+    dp = dp & 1;
+    dp_acc = dp_acc ^ dp;
+    idx = (((idx * idx) & BCHDOMAIN) * idx) & BCHDOMAIN;
+    /* 2nd seed */
+    dp = c.S[1] & idx;
+    dp -= (dp >> 1) & 0x5555555555555555;
+    dp = (dp & 0x3333333333333333) + ((dp >> 2) & 0x3333333333333333);
+    dp = (dp + (dp >> 4)) & 0x0f0f0f0f0f0f0f0f;
+    dp = (dp * 0x0101010101010101) >> 56;
+    dp = dp & 1;
+    dp_acc = dp_acc ^ dp;
+    return ((double)dp_acc) * 2.0 - 1.0;
 }
 
 /*
@@ -248,28 +250,35 @@ bch4_gen(uint_fast64_t idx, BCH_conf c)
  * - p: array
  * - k: length of p
  */
-int
-bin_search(int val, const int *p, int k)
+int bin_search(int val, const int *p, int k)
 {
-  int left, right, mid, k_star;
+    int left, right, mid, k_star;
 
-  left = 0;
-  right = k - 1;
-  k_star = k;
-  while (1) {
-    mid = (right + left) / 2;
-    if (left == right) {
-      if (p[mid] >= val)
-	k_star = mid;
-      return k_star;
-    } else if (p[mid] == val) {
-      return mid;
-    } else if (p[mid] < val) {
-      left = mid + 1;
-    } else {
-      right = mid;
+    left = 0;
+    right = k - 1;
+    k_star = k;
+    while (1)
+    {
+        mid = (right + left) / 2;
+        if (left == right)
+        {
+            if (p[mid] >= val)
+                k_star = mid;
+            return k_star;
+        }
+        else if (p[mid] == val)
+        {
+            return mid;
+        }
+        else if (p[mid] < val)
+        {
+            left = mid + 1;
+        }
+        else
+        {
+            right = mid;
+        }
     }
-  }
 }
 
 /* 
@@ -279,15 +288,15 @@ bin_search(int val, const int *p, int k)
 uint_fast64_t
 lcg_init()
 {
-  uint_fast64_t x;
-  double upper;
-  
-  upper = (double) (1 << 15);
-  x = (uint_fast64_t) floor(runif(0.0, upper));
-  x = x | (((uint_fast64_t) floor(runif(0.0, upper))) << 16);
-  x = x | (((uint_fast64_t) floor(runif(0.0, upper))) << 32);
-  x = x | (((uint_fast64_t) floor(runif(0.0, upper))) << 48);
-  return x;
+    uint_fast64_t x;
+    double upper;
+
+    upper = (double)(1 << 15);
+    x = (uint_fast64_t)floor(runif(0.0, upper));
+    x = x | (((uint_fast64_t)floor(runif(0.0, upper))) << 16);
+    x = x | (((uint_fast64_t)floor(runif(0.0, upper))) << 32);
+    x = x | (((uint_fast64_t)floor(runif(0.0, upper))) << 48);
+    return x;
 }
 
 /*
@@ -313,10 +322,10 @@ lcg_init()
 uint_fast64_t
 ruint()
 {
-  uint_fast64_t rint;
+    uint_fast64_t rint;
 
-  rint = (uint_fast64_t) floor(runif(0.0, (double) BCHDOMAIN));
-  return rint;
+    rint = (uint_fast64_t)floor(runif(0.0, (double)BCHDOMAIN));
+    return rint;
 }
 
 /*
@@ -324,88 +333,96 @@ ruint()
  * *z point to already allocated matrix SEXP data. A row block offset in y can
  * be specified via the row offset ory.
  */
-void
-matprod_block(double *x, int nrx, int ncx,
-	      double *y, int nry, int ncy, int ory,
-	      double *z)
+void matprod_block(double *x, int nrx, int ncx,
+                   double *y, int nry, int ncy, int ory,
+                   double *z)
 {
-  double sum1, sum2, sum3, sum4;
-  int i, j, k;
-  int t1;
+    double sum1, sum2, sum3, sum4;
+    int i, j, k;
+    int t1;
 
-  for (i = 0; i < nrx; i++) {
-    for (k = 0; k < ncy; k++) {
-      sum1 = sum2 = sum3 = sum4 = 0.0;
-      t1 = ory + k * nry; /* common adress offset in y */
-      for (j = 0; j < ncx % 4; j++) { /* first elements of unrolled loop */
-	sum1 += x[i + j * nrx] * y[j + t1];
-      }
-      for (; j < ncx; j += 4) { /* remainder of unrolled loop */
-	sum1 += x[i + j * nrx] * y[j + t1];
-	sum2 += x[i + (j + 1) * nrx] * y[j + 1 + t1];
-	sum3 += x[i + (j + 2) * nrx] * y[j + 2 + t1];
-	sum4 += x[i + (j + 3) * nrx] * y[j + 3 + t1];
-      }
-      z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
+    for (i = 0; i < nrx; i++)
+    {
+        for (k = 0; k < ncy; k++)
+        {
+            sum1 = sum2 = sum3 = sum4 = 0.0;
+            t1 = ory + k * nry; /* common adress offset in y */
+            for (j = 0; j < ncx % 4; j++)
+            { /* first elements of unrolled loop */
+                sum1 += x[i + j * nrx] * y[j + t1];
+            }
+            for (; j < ncx; j += 4)
+            { /* remainder of unrolled loop */
+                sum1 += x[i + j * nrx] * y[j + t1];
+                sum2 += x[i + (j + 1) * nrx] * y[j + 1 + t1];
+                sum3 += x[i + (j + 2) * nrx] * y[j + 2 + t1];
+                sum4 += x[i + (j + 3) * nrx] * y[j + 3 + t1];
+            }
+            z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
+        }
     }
-  }
 }
 
 /*
   like matprod_block but for x stored in *row_major* order.
  */
-void
-matprod_block_xrm(double *x, int nrx, int ncx,
-		  double *y, int nry, int ncy, int ory,
-		  double *z)
+void matprod_block_xrm(double *x, int nrx, int ncx,
+                       double *y, int nry, int ncy, int ory,
+                       double *z)
 {
-  std::cout << "Performing matrix multiplication.\n";
+    std::cout << "Performing matrix multiplication.\n";
 
-  double sum1, sum2, sum3, sum4;
-  int i, j, k;
-  int t1, t2;
+    double sum1, sum2, sum3, sum4;
+    int i, j, k;
+    int t1, t2;
 
-  for (i = 0; i < nrx; i++) {
-    t2 = i * ncx; /* common adress offset in x */
-    for (k = 0; k < ncy; k++) {
-      sum1 = sum2 = sum3 = sum4 = 0.0;
-      t1 = ory + k * nry; /* common adress offset in y */
-      for (j = 0; j < ncx % 4; j++) { /* first elements of unrolled loop */
-        sum1 += x[i + j * nrx] * y[j + t1];
-      }
-      for (; j < ncx; j += 4) { /* remainder of unrolled loop */
-        sum1 += x[t2 + j] * y[j + t1];
-        sum2 += x[t2 + j + 1] * y[j + 1 + t1];
-        sum3 += x[t2 + j + 2] * y[j + 2 + t1];
-        sum4 += x[t2 + j + 3] * y[j + 3 + t1];
-      }
-      z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
+    for (i = 0; i < nrx; i++)
+    {
+        t2 = i * ncx; /* common adress offset in x */
+        for (k = 0; k < ncy; k++)
+        {
+            sum1 = sum2 = sum3 = sum4 = 0.0;
+            t1 = ory + k * nry; /* common adress offset in y */
+            for (j = 0; j < ncx % 4; j++)
+            { /* first elements of unrolled loop */
+                sum1 += x[i + j * nrx] * y[j + t1];
+            }
+            for (; j < ncx; j += 4)
+            { /* remainder of unrolled loop */
+                sum1 += x[t2 + j] * y[j + t1];
+                sum2 += x[t2 + j + 1] * y[j + 1 + t1];
+                sum3 += x[t2 + j + 2] * y[j + 2 + t1];
+                sum4 += x[t2 + j + 3] * y[j + 3 + t1];
+            }
+            z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
+        }
     }
-  }
 
-  std::cout << "Block wise matrix multiplication completed!\n";
+    std::cout << "Block wise matrix multiplication completed!\n";
 }
 
 /* Sample n integers without replacement from {0, ..., N-1}
  *
  * This implements Knuth's Algorithm S (TAOCP vol. 2, 3.4.2)
  */
-void
-sample_int(int n, int N, int *out)
+void sample_int(int n, int N, int *out)
 {
-  int t, m, i;
+    int t, m, i;
 
-  m = 0;
-  i = 0;
-  for (t = 1; t <= N; t++) {
-    if ((N - t) * unif_rand() < n - m) { /* select */
-      out[i] = t - 1; /* map numbers from {1, ... N} to {0, ..., N-1} */
-      ++i;
-      if (++m == n) {
-	return;
-      }
+    m = 0;
+    i = 0;
+    for (t = 1; t <= N; t++)
+    {
+        if ((N - t) * unif_rand() < n - m)
+        {                   /* select */
+            out[i] = t - 1; /* map numbers from {1, ... N} to {0, ..., N-1} */
+            ++i;
+            if (++m == n)
+            {
+                return;
+            }
+        }
     }
-  }
 }
 
 /* Calculate a Clarkson Woodruff sketch.
@@ -465,72 +482,75 @@ sample_int(int n, int N, int *out)
  *  - data: class matrix, storage mode double
  *  - sketch_rows: scalar integer
  */
-void
-sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
+void sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
 {
-  BCH_conf bch;
-  Matrix r_part, p_part;
-  double *s_elt, *d_elt, *r_elt, *p_elt, sqrt_rows;
-  int block_max, block_rows, i, j, k;
-  size_t s_rows, d_rows, cols;
+    BCH_conf bch;
+    Matrix r_part, p_part;
+    double *s_elt, *d_elt, *r_elt, *p_elt, sqrt_rows;
+    int block_max, block_rows, i, j, k;
+    size_t s_rows, d_rows, cols;
 
-  // GetRNGstate(); // getRNGState: Apply the value of .Random.seed to R's internal RNG state
-  d_rows = data.rows();
-  cols = data.columns();
-  s_rows = sketch_rows;
-  d_elt = data.data();
-  /* initialise BCH generator */
-  bch = bch_configure(4);
-  /* create empty sketch and fill with zero */
-  // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  sketch.allocate(s_rows, cols);
-  // s_elt = REAL(sketch);
-  s_elt = sketch.data();
-  for (i = 0; i < s_rows * cols; i++)
-    s_elt[i] = 0.0;
-  /* matrix to hold result of matrix multiplication */
-  //p_part = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  std::cout << "Matrix p_part. ";
-  p_part.allocate(s_rows, cols);
-  //p_elt = REAL(p_part);
-  p_elt = p_part.data();
-  /* reserve memory for projection sub-matrix */
-  block_max = 256; /* Note: this is hand-tuned for execution speed */
-  // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_max));
-  std::cout << "Matrix r_part. ";
-  r_part.allocate(s_rows, block_max);
-  r_elt = r_part.data();
-  for (i = 0; i < d_rows; i += block_max) { /* i: rows in data matrix */
-    if (i + block_max < d_rows) {
-      block_rows = block_max;
-    } else {
-      /* when in last and incomplete block */
-      block_rows = d_rows - i;
-      // UNPROTECT(1); /* r_part */
-      /* set up a smaller projection matrix */
-      // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_rows));
-      std::cout << "Matrix r_part. ";
-      r_part.allocate(s_rows, block_rows);
-      // r_elt = REAL(r_part);
-      r_elt = r_part.data();
+    // GetRNGstate(); // getRNGState: Apply the value of .Random.seed to R's internal RNG state
+    d_rows = data.rows();
+    cols = data.columns();
+    s_rows = sketch_rows;
+    d_elt = data.data();
+    /* initialise BCH generator */
+    bch = bch_configure(4);
+    /* create empty sketch and fill with zero */
+    // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+    sketch.allocate(s_rows, cols);
+    // s_elt = REAL(sketch);
+    s_elt = sketch.data();
+    for (i = 0; i < s_rows * cols; i++)
+        s_elt[i] = 0.0;
+    /* matrix to hold result of matrix multiplication */
+    //p_part = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+    std::cout << "Matrix p_part. ";
+    p_part.allocate(s_rows, cols);
+    //p_elt = REAL(p_part);
+    p_elt = p_part.data();
+    /* reserve memory for projection sub-matrix */
+    block_max = 256; /* Note: this is hand-tuned for execution speed */
+    // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_max));
+    std::cout << "Matrix r_part. ";
+    r_part.allocate(s_rows, block_max);
+    r_elt = r_part.data();
+    for (i = 0; i < d_rows; i += block_max)
+    { /* i: rows in data matrix */
+        if (i + block_max < d_rows)
+        {
+            block_rows = block_max;
+        }
+        else
+        {
+            /* when in last and incomplete block */
+            block_rows = d_rows - i;
+            // UNPROTECT(1); /* r_part */
+            /* set up a smaller projection matrix */
+            // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_rows));
+            std::cout << "Matrix r_part. ";
+            r_part.allocate(s_rows, block_rows);
+            // r_elt = REAL(r_part);
+            r_elt = r_part.data();
+        }
+        /* fill in random projection matrix (in row-major order)*/
+        for (j = 0; j < s_rows; j++)         /* j: rows in projection matrix */
+            for (k = 0; k < block_rows; k++) /* k: cols in projection matrix */
+                r_elt[j * block_rows + k] = bch4_gen(j + (i + k) * s_rows, bch);
+
+        matprod_block_xrm(r_elt, s_rows, block_rows, d_elt, d_rows, cols, i, p_elt);
+
+        for (j = 0; j < s_rows * cols; j++)
+            s_elt[j] += p_elt[j];
     }
-    /* fill in random projection matrix (in row-major order)*/
-    for (j = 0; j < s_rows; j++)       /* j: rows in projection matrix */
-      for (k = 0; k < block_rows; k++) /* k: cols in projection matrix */
-	      r_elt[j * block_rows + k] = bch4_gen(j + (i + k) * s_rows, bch);
-
-    matprod_block_xrm(r_elt, s_rows, block_rows, d_elt, d_rows, cols, i, p_elt);
-
+    /* normalize */
+    sqrt_rows = sqrt((double)s_rows);
     for (j = 0; j < s_rows * cols; j++)
-      s_elt[j] += p_elt[j];
-  }
-  /* normalize */
-  sqrt_rows = sqrt((double) s_rows);
-  for (j = 0; j < s_rows * cols; j++)
-    s_elt[j] /= sqrt_rows;
-  //PutRNGstate();
-  //UNPROTECT(3); /* sketch, p_part, r_part */
-  //return sketch;
+        s_elt[j] /= sqrt_rows;
+    //PutRNGstate();
+    //UNPROTECT(3); /* sketch, p_part, r_part */
+    //return sketch;
 }
 
 // SEXP
@@ -583,58 +603,60 @@ sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
 //   return sketch;
 // }
 
-void
-srht_rec(const int *p, int k, int q,
-	 double *data, int d_rows, int d_cols, int d_offset,
-	 double *res, int r_rows, int r_offset)
+void srht_rec(const int *p, int k, int q,
+              double *data, int d_rows, int d_cols, int d_offset,
+              double *res, int r_rows, int r_offset)
 {
-  int cnt, atmp, btmp, k_new, q2;
-  unsigned int i, j;
-  double hd, *d_sub;
+    int cnt, atmp, btmp, k_new, q2;
+    unsigned int i, j;
+    double hd, *d_sub;
 
-  if (k == 0)
-    return;
-  if (k == 1) {
-    cnt = 0;
-    for (j = 0; j < d_cols; j++) { /* 1st col of hadamard matrix is ones */
-      res[r_offset + j * r_rows] += data[0 + j * d_rows];
+    if (k == 0)
+        return;
+    if (k == 1)
+    {
+        cnt = 0;
+        for (j = 0; j < d_cols; j++)
+        { /* 1st col of hadamard matrix is ones */
+            res[r_offset + j * r_rows] += data[0 + j * d_rows];
+        }
+        for (i = 1; i < d_rows; i++)
+        {
+            btmp = i;
+            atmp = p[0];
+            while ((btmp & 1) == 0)
+            {
+                cnt ^= atmp & 1;
+                atmp >>= 1;
+                btmp >>= 1;
+            }
+            cnt ^= atmp & 1;
+            hd = cnt ? -1.0 : 1.0;
+            for (j = 0; j < d_cols; j++)
+                res[r_offset + j * r_rows] += hd * data[i + j * d_rows];
+        }
+        return;
     }
-    for (i = 1; i < d_rows; i++) {
-      btmp = i;
-      atmp = p[0];
-      while ((btmp & 1) == 0) {
-	cnt ^= atmp & 1;
-	atmp >>= 1;
-	btmp >>= 1;
-      }
-      cnt ^= atmp & 1;
-      hd = cnt ? -1.0 : 1.0;
-      for (j = 0; j < d_cols; j ++)
-	res[r_offset + j * r_rows] += hd * data[i + j * d_rows];
-    }
-    return;
-  }
-  q2 = q / 2;
-  k_new = bin_search(d_offset + q2, p, k);
-  d_sub = (double *) R_alloc(q2 * d_cols, sizeof(double));
-  /* first recursion: add lower half to upper half */
-  for (j = 0; j < d_cols; j++)
-    for (i = 0; i < q2; i++)
-      d_sub[i + j*q2] = data[i + j*d_rows] + (i + q2 >= d_rows ? 0 : data[i + q2 + j*d_rows]);
-  srht_rec(p, k_new, q2,
-	   d_sub, q2, d_cols, d_offset,
-	   res, r_rows, r_offset);
-  /* second recursion: subtract lower half from upper half */
-  for (j = 0; j < d_cols; j++)
-    for (i = 0; i < q2; i++)
-      d_sub[i + j*q2] = data[i + j*d_rows] - (i+q2 >= d_rows ? 0 : data[i + q2 + j*d_rows]);
-  srht_rec(p + k_new, k - k_new, q2,
-	   d_sub, q2, d_cols, d_offset + q2,
-	   res, r_rows, r_offset + k_new);
+    q2 = q / 2;
+    k_new = bin_search(d_offset + q2, p, k);
+    d_sub = (double *)R_alloc(q2 * d_cols, sizeof(double));
+    /* first recursion: add lower half to upper half */
+    for (j = 0; j < d_cols; j++)
+        for (i = 0; i < q2; i++)
+            d_sub[i + j * q2] = data[i + j * d_rows] + (i + q2 >= d_rows ? 0 : data[i + q2 + j * d_rows]);
+    srht_rec(p, k_new, q2,
+             d_sub, q2, d_cols, d_offset,
+             res, r_rows, r_offset);
+    /* second recursion: subtract lower half from upper half */
+    for (j = 0; j < d_cols; j++)
+        for (i = 0; i < q2; i++)
+            d_sub[i + j * q2] = data[i + j * d_rows] - (i + q2 >= d_rows ? 0 : data[i + q2 + j * d_rows]);
+    srht_rec(p + k_new, k - k_new, q2,
+             d_sub, q2, d_cols, d_offset + q2,
+             res, r_rows, r_offset + k_new);
 }
 
-void
-parseBoW(const std::string &filePath, Matrix &data, bool transposed = false)
+void parseBoW(const std::string &filePath, Matrix &data, bool transposed = false)
 {
     printf("Opening input file %s...\n", filePath.c_str());
     namespace io = boost::iostreams;
@@ -676,11 +698,11 @@ parseBoW(const std::string &filePath, Matrix &data, bool transposed = false)
 
     if (transposed)
     {
-      data.allocate(dimSize, dataSize);
+        data.allocate(dimSize, dataSize);
     }
     else
     {
-      data.allocate(dataSize, dimSize);
+        data.allocate(dataSize, dimSize);
     }
 
     while (inData.good())
@@ -714,29 +736,28 @@ parseBoW(const std::string &filePath, Matrix &data, bool transposed = false)
 
         if (transposed)
         {
-          data.set(wordId, currentRow, count);
-        } 
+            data.set(wordId, currentRow, count);
+        }
         else
         {
-          data.set(currentRow, wordId, count);
-        }       
+            data.set(currentRow, wordId, count);
+        }
 
         previousDocId = docId;
     }
 }
 
+int main()
+{
+    Matrix data, sketch;
 
-int main() {
-  Matrix data, sketch;
+    parseBoW("data/input/docword.enron.txt.gz", data, true);
 
-  parseBoW("data/input/docword.enron.txt.gz", data, true);
+    std::cout << "Data parsing completed!!\n";
 
-  std::cout << "Data parsing completed!!\n";
+    sketch_rad(data, 1000, sketch);
 
-  sketch_rad(data, 1000, sketch);
+    std::cout << "Sketch generated!\n";
 
-  std::cout << "Sketch generated!\n";
-
-	return 0;
+    return 0;
 }
-
