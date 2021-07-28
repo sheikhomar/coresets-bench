@@ -838,7 +838,7 @@ void testPairwiseSquaredDistances()
     int indices[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     printPairwiseSquaredDistances(data, indices, 10);
-    
+
     // Expected result:
     //    0.00       4.95      2.18     18.47    214.31    165.53    208.7      31.53    178.38     10.79
     //    4.95       0.00      1.62      4.31    181.58    137.39    171.25     11.78    142.69      1.13
@@ -865,7 +865,11 @@ int main()
 
     int indices[nSamples];
 
-    sample_int(nSamples, N, indices);
+    // sample_int(nSamples, N, indices);
+    for (size_t i = 0; i < nSamples; i++)
+    {
+        indices[i] = i;
+    }
 
     printPairwiseSquaredDistances(data, indices, nSamples);
 
