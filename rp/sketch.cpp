@@ -96,6 +96,16 @@ public:
         this->_entries[index] = value;
     }
 
+    double at(size_t rowIndex, size_t columnIndex)
+    {
+        size_t index = rowIndex * this->_nColumns + columnIndex;
+        if (index > this->_totalSize)
+        {
+            throw std::invalid_argument("Index out of bounds.");
+        }
+        return this->_entries[index];
+    }
+
     double *data() const { return this->_entries; }
     size_t rows() const { return this->_nRows; }
     size_t columns() const { return this->_nColumns; }
@@ -370,8 +380,6 @@ void matprod_block_xrm(double *x, int nrx, int ncx,
                        double *y, int nry, int ncy, int ory,
                        double *z)
 {
-    std::cout << "Performing matrix multiplication.\n";
-
     double sum1, sum2, sum3, sum4;
     int i, j, k;
     int t1, t2;
@@ -397,8 +405,6 @@ void matprod_block_xrm(double *x, int nrx, int ncx,
             z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
         }
     }
-
-    std::cout << "Block wise matrix multiplication completed!\n";
 }
 
 /* Sample n integers without replacement from {0, ..., N-1}
@@ -755,6 +761,55 @@ void parseBoW(const std::string &filePath, Matrix &data, bool transposed = false
     }
 }
 
+void printSquaredDistance(Matrix &data, size_t p1, size_t p2)
+{
+    size_t D = data.rows();
+
+    double squaredDistance = 0.0;
+    double diff = 0.0;
+    for (size_t j = 0; j < D; j++)
+    {
+        diff = data.at(j, p1) - data.at(j, p2);
+        squaredDistance += diff * diff;
+    }
+
+    printf(" %10.2f ", squaredDistance);
+}
+
+void printPairwiseSquaredDistances(Matrix &data, int indices[], size_t numberOfSamples)
+{
+    auto printLine = [numberOfSamples]()
+    {
+        std::cout << "  ";
+        for (size_t i = 0; i < numberOfSamples; i++)
+        {
+            std::cout << "------------";
+        }
+        std::cout << "\n";
+    };
+
+    std::cout << "Pairwise distances for points:\n ";
+    for (size_t i = 0; i < numberOfSamples; i++)
+    {
+        printf("%12d", indices[i]);
+    }
+    std::cout << "\n";
+
+    printLine();
+    for (size_t i = 0; i < numberOfSamples; i++)
+    {
+        printf("  ");
+        for (size_t j = 0; j < numberOfSamples; j++)
+        {
+            auto p1 = static_cast<size_t>(indices[i]);
+            auto p2 = static_cast<size_t>(indices[j]);
+            printSquaredDistance(data, p1, p2);
+        }
+        printf("\n");
+    }
+    printLine();
+}
+
 int main()
 {
     Matrix data, sketch, sketch2;
@@ -762,6 +817,15 @@ int main()
     parseBoW("data/input/docword.enron.txt.gz", data, true);
 
     std::cout << "Data parsing completed!!\n";
+
+    size_t N = data.columns();
+    constexpr const size_t nSamples = 10;
+
+    int indices[nSamples];
+
+    sample_int(nSamples, N, indices);
+
+    printPairwiseSquaredDistances(data, indices, nSamples);
 
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
@@ -771,10 +835,18 @@ int main()
     // Clean up.
     data.deallocate();
 
+    std::cout << "Distances of the CW sketch.\n";
+
+    printPairwiseSquaredDistances(sketch, indices, nSamples);
+
     std::cout << "Running the Rademacher algorithm...\n";
-    
+
     // Apply the Rademacher algorithm.
     sketch_rad(sketch, 64, sketch2);
+
+    std::cout << "Distances of the RAD sketch.\n";
+
+    printPairwiseSquaredDistances(sketch2, indices, nSamples);
 
     // sketch_srht(data, 1024, sketch);
 
