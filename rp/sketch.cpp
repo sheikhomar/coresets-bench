@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <stddef.h>
+#include <cstdlib>
 
 #define _XOPEN_SOURCE 700
 
@@ -26,6 +27,41 @@ typedef struct {
   uint_fast64_t *S;  /* array of k full seeds */
 } BCH_conf;
 
+class Matrix
+{
+private:
+  double *_entries;
+  size_t _nRows;
+  size_t _nColumns;
+  size_t _totalSize;
+
+public:
+  Matrix() { }
+  Matrix(size_t rows, size_t columns)
+  {
+    allocate(rows, columns);
+  }
+
+  void allocate(size_t rows, size_t columns)
+  {
+    size_t totalSize = rows * columns * sizeof(double);
+    this->_entries = reinterpret_cast<double*>(std::malloc(totalSize));
+    this->_nRows = rows;
+    this->_nColumns = columns;
+    this->_totalSize = totalSize;
+  }
+
+  double *data() const { return this->_entries; }
+  size_t rows() const { return this->_nRows; }
+  size_t columns() const { return this->_nColumns; }
+  size_t size() const { return this->_totalSize; }
+
+  ~Matrix()
+	{
+    std::free(this->_entries);
+	}
+};
+
 static BCH_conf bch_configure(unsigned int deg);
 static double bch_gen(uint_fast64_t idx, BCH_conf c);
 static double bch4_gen(uint_fast64_t idx, BCH_conf c);
@@ -37,27 +73,27 @@ static void matprod_block_xrm(double *x, int nrx, int ncx,
 			      double *y, int nry, int ncy, int ory, double *z);
 static uint_fast64_t ruint();
 static void sample_int(int n, int max, int *out);
-SEXP sketch_cw(SEXP data, SEXP sketch_rows);
-SEXP sketch_rad(SEXP data, SEXP sketch_rows);
-SEXP sketch_srht(SEXP data, SEXP sketch_rows);
+// SEXP sketch_cw(SEXP data, SEXP sketch_rows);
+// SEXP sketch_rad(SEXP data, SEXP sketch_rows);
+// SEXP sketch_srht(SEXP data, SEXP sketch_rows);
 static void srht_rec(const int *p, int k, int q,
 		     double *data, int d_rows, int d_cols, int d_offset,
 		     double *res, int r_rows, int r_offset);
 
 /* register .Call entrypoints with R */
-static const R_CallMethodDef CallEntries[] = {
-  {"sketch_cw",   (DL_FUNC) &sketch_cw,   2},
-  {"sketch_rad",  (DL_FUNC) &sketch_rad,  2},
-  {"sketch_srht", (DL_FUNC) &sketch_srht, 2},
-  {NULL, NULL, 0}
-};					      
+// static const R_CallMethodDef CallEntries[] = {
+//   {"sketch_cw",   (DL_FUNC) &sketch_cw,   2},
+//   {"sketch_rad",  (DL_FUNC) &sketch_rad,  2},
+//   {"sketch_srht", (DL_FUNC) &sketch_srht, 2},
+//   {NULL, NULL, 0}
+// };					      
 
-void
-R_init_RaProR(DllInfo *dll)
-{
-  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-  R_useDynamicSymbols(dll, FALSE);
-}
+// void
+// R_init_RaProR(DllInfo *dll)
+// {
+//   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+//   R_useDynamicSymbols(dll, FALSE);
+// }
 
 BCH_conf
 bch_configure (unsigned int deg)
@@ -302,50 +338,50 @@ sample_int(int n, int N, int *out)
  *  - data: class matrix, storage mode double
  *  - sketch_rows: scalar integer
  */
-SEXP
-sketch_cw(SEXP data, SEXP sketch_rows)
-{
-  BCH_conf bch;
-  SEXP sketch, dim;
-  double *s_elt, *d_elt, sgn;
-  int s_rows, cols, d_rows, i, h_i, j;
-  uint_fast64_t rnd, a, b, m;
+// SEXP
+// sketch_cw(SEXP data, SEXP sketch_rows)
+// {
+//   BCH_conf bch;
+//   SEXP sketch, dim;
+//   double *s_elt, *d_elt, sgn;
+//   int s_rows, cols, d_rows, i, h_i, j;
+//   uint_fast64_t rnd, a, b, m;
 
-  GetRNGstate(); /* init for ruint() */
-  dim = getAttrib(data, R_DimSymbol);
-  d_rows = INTEGER(dim)[0];
-  cols = INTEGER(dim)[1];
-  s_rows = INTEGER(sketch_rows)[0];
-  d_elt = REAL(data);
-  /* initialise BCH generator */
-  bch = bch_configure(4);
-  /* initialise LCG generator for fast universal hashing */
-  for (m = 1; ((s_rows - 1) >> m) > 0; m++) {
-    /* s_rows is a power of 2, find the position of the 1-bit ... */
-  }
-  /* ... and generate seeds for the linear congruential generator*/
-  a = lcg_init();
-  b = lcg_init();
-  /* create empty sketch and fill with zero */
-  sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  s_elt = REAL(sketch);
-  for (i = 0; i < s_rows * cols; i++)
-    s_elt[i] = 0.0;
-  /* project randomly */
-  for (i = 0; i < d_rows; i++) {
-    /* calculate target row by fast universal hashing */
-    rnd = a * i + b;
-    h_i = rnd >> (64 - m);
-    sgn = bch4_gen(i, bch);
-    for (j = 0; j < cols; j++) {
-      /* R matrices are in column major storage */
-      s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
-    }
-  }
-  PutRNGstate();
-  UNPROTECT(1); /* sketch */
-  return sketch;
-}
+//   GetRNGstate(); /* init for ruint() */
+//   dim = getAttrib(data, R_DimSymbol);
+//   d_rows = INTEGER(dim)[0];
+//   cols = INTEGER(dim)[1];
+//   s_rows = INTEGER(sketch_rows)[0];
+//   d_elt = REAL(data);
+//   /* initialise BCH generator */
+//   bch = bch_configure(4);
+//   /* initialise LCG generator for fast universal hashing */
+//   for (m = 1; ((s_rows - 1) >> m) > 0; m++) {
+//     /* s_rows is a power of 2, find the position of the 1-bit ... */
+//   }
+//   /* ... and generate seeds for the linear congruential generator*/
+//   a = lcg_init();
+//   b = lcg_init();
+//   /* create empty sketch and fill with zero */
+//   sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+//   s_elt = REAL(sketch);
+//   for (i = 0; i < s_rows * cols; i++)
+//     s_elt[i] = 0.0;
+//   /* project randomly */
+//   for (i = 0; i < d_rows; i++) {
+//     /* calculate target row by fast universal hashing */
+//     rnd = a * i + b;
+//     h_i = rnd >> (64 - m);
+//     sgn = bch4_gen(i, bch);
+//     for (j = 0; j < cols; j++) {
+//       /* R matrices are in column major storage */
+//       s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
+//     }
+//   }
+//   PutRNGstate();
+//   UNPROTECT(1); /* sketch */
+//   return sketch;
+// }
 
 /* Calculate a sketch based on Rademacher transforms
  *
@@ -353,49 +389,56 @@ sketch_cw(SEXP data, SEXP sketch_rows)
  *  - data: class matrix, storage mode double
  *  - sketch_rows: scalar integer
  */
-SEXP
-sketch_rad(SEXP data, SEXP sketch_rows)
+void
+sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
 {
   BCH_conf bch;
-  SEXP sketch, dim, r_part, p_part;
+  Matrix r_part, p_part;
   double *s_elt, *d_elt, *r_elt, *p_elt, sqrt_rows;
-  int s_rows, cols, d_rows, block_max, block_rows, i, j, k;
+  int block_max, block_rows, i, j, k;
+  size_t s_rows, d_rows, cols;
 
-  GetRNGstate();
-  dim = getAttrib(data, R_DimSymbol);
-  d_rows = INTEGER(dim)[0];
-  cols = INTEGER(dim)[1];
-  s_rows = INTEGER(sketch_rows)[0];
-  d_elt = REAL(data);
+  // GetRNGstate(); // getRNGState: Apply the value of .Random.seed to R's internal RNG state
+  d_rows = data.rows();
+  cols = data.columns();
+  s_rows = sketch_rows;
+  d_elt = data.data();
   /* initialise BCH generator */
   bch = bch_configure(4);
   /* create empty sketch and fill with zero */
-  sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  s_elt = REAL(sketch);
+  // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+  sketch.allocate(s_rows, cols);
+  // s_elt = REAL(sketch);
+  s_elt = sketch.data();
   for (i = 0; i < s_rows * cols; i++)
     s_elt[i] = 0.0;
   /* matrix to hold result of matrix multiplication */
-  p_part = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  p_elt = REAL(p_part);
+  //p_part = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+  p_part = Matrix(s_rows, cols);
+  //p_elt = REAL(p_part);
+  p_elt = p_part.data();
   /* reserve memory for projection sub-matrix */
   block_max = 256; /* Note: this is hand-tuned for execution speed */
-  r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_max));
-  r_elt = REAL(r_part);
+  // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_max));
+  r_part = Matrix(s_rows, block_max);
+  r_elt = r_part.data();
   for (i = 0; i < d_rows; i += block_max) { /* i: rows in data matrix */
     if (i + block_max < d_rows) {
       block_rows = block_max;
     } else {
       /* when in last and incomplete block */
       block_rows = d_rows - i;
-      UNPROTECT(1); /* r_part */
+      // UNPROTECT(1); /* r_part */
       /* set up a smaller projection matrix */
-      r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_rows));
-      r_elt = REAL(r_part);
+      // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_rows));
+      r_part = Matrix(s_rows, block_max);
+      // r_elt = REAL(r_part);
+      r_elt = r_part.data();
     }
     /* fill in random projection matrix (in row-major order)*/
     for (j = 0; j < s_rows; j++)       /* j: rows in projection matrix */
       for (k = 0; k < block_rows; k++) /* k: cols in projection matrix */
-	r_elt[j * block_rows + k] = bch4_gen(j + (i + k) * s_rows, bch);
+	      r_elt[j * block_rows + k] = bch4_gen(j + (i + k) * s_rows, bch);
     matprod_block_xrm(r_elt, s_rows, block_rows,
 		      d_elt, d_rows, cols, i, p_elt);
     for (j = 0; j < s_rows * cols; j++)
@@ -405,60 +448,60 @@ sketch_rad(SEXP data, SEXP sketch_rows)
   sqrt_rows = sqrt((double) s_rows);
   for (j = 0; j < s_rows * cols; j++)
     s_elt[j] /= sqrt_rows;
-  PutRNGstate();
-  UNPROTECT(3); /* sketch, p_part, r_part */
-  return sketch;
+  //PutRNGstate();
+  //UNPROTECT(3); /* sketch, p_part, r_part */
+  //return sketch;
 }
 
-SEXP
-sketch_srht(SEXP data, SEXP sketch_rows)
-{
-  BCH_conf bch;
-  SEXP sketch, tmp, dim;
-  double *s_elt, *d_elt, *t_elt, sgn, sqrt_rows;
-  int s_rows, cols, d_rows, i, j,*p;
-  unsigned int q;
+// SEXP
+// sketch_srht(SEXP data, SEXP sketch_rows)
+// {
+//   BCH_conf bch;
+//   SEXP sketch, tmp, dim;
+//   double *s_elt, *d_elt, *t_elt, sgn, sqrt_rows;
+//   int s_rows, cols, d_rows, i, j,*p;
+//   unsigned int q;
 
-  GetRNGstate(); /* init for ruint() */
-  dim = getAttrib(data, R_DimSymbol);
-  d_rows = INTEGER(dim)[0];
-  cols = INTEGER(dim)[1];
-  s_rows = INTEGER(sketch_rows)[0];
-  d_elt = REAL(data);
-  /* initialise BCH generator */
-  bch = bch_configure(4);
-  /* create empty sketch and fill with zero */
-  sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  s_elt = REAL(sketch);
-  for (i = 0; i < s_rows * cols; i++)
-    s_elt[i] = 0.0;
-  /* matrix to store data rows multiplied by +/-1 */
-  tmp = PROTECT(allocMatrix(REALSXP, d_rows, cols));
-  t_elt = REAL(tmp);
-  /* next power of two >= d_rows */
-  q = 1;
-  do
-    q *= 2;
-  while (q < d_rows);
-  /* select row randomisation (sample without replacement) */
-  p = (int *) R_alloc(s_rows, sizeof(int));
-  sample_int(s_rows, q, p);
-  /* multiply data rows by +/-1 */
-  for (i = 0; i < d_rows; i++) {
-    sgn = bch4_gen(i, bch);
-    for (j = 0; j < cols; j++)
-      t_elt[i + j * d_rows] = sgn * d_elt[i + j * d_rows];
-  }
-  /* recursively calculate SRHT */
-  srht_rec(p, s_rows, q, t_elt, d_rows, cols, 0, s_elt, s_rows, 0);
-  /* normalize */
-  sqrt_rows = sqrt((double) s_rows);
-  for (j = 0; j < s_rows * cols; j++)
-    s_elt[j] /= sqrt_rows;
-  PutRNGstate();
-  UNPROTECT(2); /* sketch, tmp */
-  return sketch;
-}
+//   GetRNGstate(); /* init for ruint() */
+//   dim = getAttrib(data, R_DimSymbol);
+//   d_rows = INTEGER(dim)[0];
+//   cols = INTEGER(dim)[1];
+//   s_rows = INTEGER(sketch_rows)[0];
+//   d_elt = REAL(data);
+//   /* initialise BCH generator */
+//   bch = bch_configure(4);
+//   /* create empty sketch and fill with zero */
+//   sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+//   s_elt = REAL(sketch);
+//   for (i = 0; i < s_rows * cols; i++)
+//     s_elt[i] = 0.0;
+//   /* matrix to store data rows multiplied by +/-1 */
+//   tmp = PROTECT(allocMatrix(REALSXP, d_rows, cols));
+//   t_elt = REAL(tmp);
+//   /* next power of two >= d_rows */
+//   q = 1;
+//   do
+//     q *= 2;
+//   while (q < d_rows);
+//   /* select row randomisation (sample without replacement) */
+//   p = (int *) R_alloc(s_rows, sizeof(int));
+//   sample_int(s_rows, q, p);
+//   /* multiply data rows by +/-1 */
+//   for (i = 0; i < d_rows; i++) {
+//     sgn = bch4_gen(i, bch);
+//     for (j = 0; j < cols; j++)
+//       t_elt[i + j * d_rows] = sgn * d_elt[i + j * d_rows];
+//   }
+//   /* recursively calculate SRHT */
+//   srht_rec(p, s_rows, q, t_elt, d_rows, cols, 0, s_elt, s_rows, 0);
+//   /* normalize */
+//   sqrt_rows = sqrt((double) s_rows);
+//   for (j = 0; j < s_rows * cols; j++)
+//     s_elt[j] /= sqrt_rows;
+//   PutRNGstate();
+//   UNPROTECT(2); /* sketch, tmp */
+//   return sketch;
+// }
 
 void
 srht_rec(const int *p, int k, int q,

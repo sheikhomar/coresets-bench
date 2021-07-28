@@ -1,4 +1,4 @@
 build:
 	@echo "==== Building rp ===="
 	mkdir -p bin/
-	gcc -o bin/rp.exe sketch.c
+	gcc -std=c++17 -o bin/rp.exe sketch.cpp
