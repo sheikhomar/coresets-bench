@@ -705,7 +705,16 @@ parseBoW(const std::string &filePath, Matrix &data)
 
 
 int main() {
-  printf("Hello world!");
+  Matrix data, sketch;
+
+  parseBoW("data/input/docword.enron.txt.gz", data);
+
+  std::cout << "Data parsing completed!!\n";
+
+  sketch_rad(data, 10000, sketch);
+
+  std::cout << "Sketch generated!\n";
+
 	return 0;
 }
 
