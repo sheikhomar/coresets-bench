@@ -810,6 +810,36 @@ void printPairwiseSquaredDistances(Matrix &data, int indices[], size_t numberOfS
     printLine();
 }
 
+void testPairwiseSquaredDistances()
+{
+    Matrix data;
+    data.allocate(2, 10);
+    data.set(0, 0, -7.237310391208174);
+    data.set(1, 0, -9.031086522545417);
+    data.set(0, 1, -8.16550136087066);
+    data.set(1, 1, -7.008504394784431);
+    data.set(0, 2, -7.022668436942146);
+    data.set(1, 2, -7.570412890908223);
+    data.set(0, 3, -8.863943061317665);
+    data.set(1, 3, -5.0532398146772355);
+    data.set(0, 4, 0.08525185826796045);
+    data.set(1, 4, 3.6452829679480585);
+    data.set(0, 5, -0.794152276623841);
+    data.set(1, 5, 2.104951171962879);
+    data.set(0, 6, -1.340520809891421);
+    data.set(1, 6, 4.157119493365752);
+    data.set(0, 7, -10.32012970766661);
+    data.set(1, 7, -4.33740290203162);
+    data.set(0, 8, -2.187731658211975);
+    data.set(1, 8, 3.333521246686991);
+    data.set(0, 9, -8.535604566608127);
+    data.set(1, 9, -6.013489256860859);
+
+    int indices[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+    printPairwiseSquaredDistances(data, indices, 10);
+}
+
 int main()
 {
     Matrix data, sketch, sketch2;
@@ -830,7 +860,7 @@ int main()
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
     // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
-    sketch_cw(data, 1024, sketch);
+    sketch_cw(data, static_cast<size_t>(pow(2, 12)), sketch);
 
     // Clean up.
     data.deallocate();
@@ -842,7 +872,7 @@ int main()
     std::cout << "Running the Rademacher algorithm...\n";
 
     // Apply the Rademacher algorithm.
-    sketch_rad(sketch, 64, sketch2);
+    sketch_rad(sketch, static_cast<size_t>(pow(2, 6)), sketch2);
 
     std::cout << "Distances of the RAD sketch.\n";
 
