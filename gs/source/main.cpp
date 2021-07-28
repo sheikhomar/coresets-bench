@@ -173,7 +173,7 @@ int main(int argc, char **argv)
   }
   else if (algorithmName == "sensitivity-sampling")
   {
-    coresets::SensitivitySampling algo(k, m);
+    coresets::SensitivitySampling algo(2*k, m);
     coreset = algo.run(*data);
   }
   else if (algorithmName == "group-sampling")
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
     size_t beta = 10000;
     size_t groupRangeSize = 4;
     size_t minimumGroupSamplingSize = 1;
-    coresets::GroupSampling algo(k, m, beta, groupRangeSize, minimumGroupSamplingSize);
+    coresets::GroupSampling algo(2*k, m, beta, groupRangeSize, minimumGroupSamplingSize);
     coreset = algo.run(*data);
   }
   else 
