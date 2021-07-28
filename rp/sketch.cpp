@@ -634,7 +634,7 @@ srht_rec(const int *p, int k, int q,
 }
 
 void
-parseBoW(const std::string &filePath, Matrix &data)
+parseBoW(const std::string &filePath, Matrix &data, bool transposed = false)
 {
     printf("Opening input file %s...\n", filePath.c_str());
     namespace io = boost::iostreams;
@@ -674,7 +674,14 @@ parseBoW(const std::string &filePath, Matrix &data)
     size_t lineNo = 3;
     double count;
 
-    data.allocate(dataSize, dimSize);
+    if (transposed)
+    {
+      data.allocate(dimSize, dataSize);
+    }
+    else
+    {
+      data.allocate(dataSize, dimSize);
+    }
 
     while (inData.good())
     {
@@ -705,7 +712,14 @@ parseBoW(const std::string &filePath, Matrix &data)
             currentRow++;
         }
 
-        data.set(currentRow, wordId, count);
+        if (transposed)
+        {
+          data.set(wordId, currentRow, count);
+        } 
+        else
+        {
+          data.set(currentRow, wordId, count);
+        }       
 
         previousDocId = docId;
     }
@@ -715,11 +729,11 @@ parseBoW(const std::string &filePath, Matrix &data)
 int main() {
   Matrix data, sketch;
 
-  parseBoW("data/input/docword.enron.txt.gz", data);
+  parseBoW("data/input/docword.enron.txt.gz", data, true);
 
   std::cout << "Data parsing completed!!\n";
 
-  sketch_rad(data, 10000, sketch);
+  sketch_rad(data, 1000, sketch);
 
   std::cout << "Sketch generated!\n";
 
