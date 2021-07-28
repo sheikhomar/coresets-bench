@@ -11,6 +11,8 @@
 #include <math.h>
 #include <stddef.h>
 #include <cstdlib>
+#include <stdexcept>
+#include <random>
 
 #define _XOPEN_SOURCE 700
 
@@ -95,6 +97,28 @@ static void srht_rec(const int *p, int k, int q,
 //   R_useDynamicSymbols(dll, FALSE);
 // }
 
+void*
+R_alloc(size_t nElements, size_t typeSize)
+{
+  return std::malloc(nElements * typeSize);
+}
+
+std::random_device seeder;
+std::mt19937 engine(seeder());
+
+double
+runif(double lower, double upper)
+{
+  std::uniform_real_distribution<double> gen(lower, upper);
+  return gen(engine);
+}
+
+double
+unif_rand()
+{
+  return runif(0.0, 1.0);
+}
+
 BCH_conf
 bch_configure (unsigned int deg)
 {
@@ -119,7 +143,7 @@ bch_gen(uint_fast64_t idx, BCH_conf c)
   unsigned int i;
 
   if (idx > BCHDOMAIN)
-    error("bch_gen: invalid index");
+    throw std::invalid_argument("bch_gen: invalid index");
   for (i = 0; i < c.k; ++i) {
     dp = c.S[i] & idx_pow;
     /* calculate parity via Hamming weight (cf. Wikipedia) */
@@ -145,7 +169,8 @@ bch4_gen(uint_fast64_t idx, BCH_conf c)
   uint_fast64_t dp = 0;
 
   if (idx > BCHDOMAIN)
-    error("bch4_gen: invalid index");
+    throw std::invalid_argument("bch4_gen: invalid index");
+
   /* 1st seed */
   dp = c.S[0] & idx;
   dp -= (dp >> 1) & 0x5555555555555555;
