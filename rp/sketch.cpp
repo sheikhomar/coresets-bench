@@ -359,6 +359,8 @@ matprod_block_xrm(double *x, int nrx, int ncx,
 		  double *y, int nry, int ncy, int ory,
 		  double *z)
 {
+  std::cout << "Performing matrix multiplication.\n";
+
   double sum1, sum2, sum3, sum4;
   int i, j, k;
   int t1, t2;
@@ -380,6 +382,8 @@ matprod_block_xrm(double *x, int nrx, int ncx,
       z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
     }
   }
+
+  std::cout << "Block wise matrix multiplication completed!\n";
 }
 
 /* Sample n integers without replacement from {0, ..., N-1}
@@ -486,12 +490,14 @@ sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
     s_elt[i] = 0.0;
   /* matrix to hold result of matrix multiplication */
   //p_part = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+  std::cout << "Matrix p_part. ";
   p_part.allocate(s_rows, cols);
   //p_elt = REAL(p_part);
   p_elt = p_part.data();
   /* reserve memory for projection sub-matrix */
   block_max = 256; /* Note: this is hand-tuned for execution speed */
   // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_max));
+  std::cout << "Matrix r_part. ";
   r_part.allocate(s_rows, block_max);
   r_elt = r_part.data();
   for (i = 0; i < d_rows; i += block_max) { /* i: rows in data matrix */
@@ -503,6 +509,7 @@ sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
       // UNPROTECT(1); /* r_part */
       /* set up a smaller projection matrix */
       // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_rows));
+      std::cout << "Matrix r_part. ";
       r_part.allocate(s_rows, block_rows);
       // r_elt = REAL(r_part);
       r_elt = r_part.data();
@@ -511,8 +518,9 @@ sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
     for (j = 0; j < s_rows; j++)       /* j: rows in projection matrix */
       for (k = 0; k < block_rows; k++) /* k: cols in projection matrix */
 	      r_elt[j * block_rows + k] = bch4_gen(j + (i + k) * s_rows, bch);
-    matprod_block_xrm(r_elt, s_rows, block_rows,
-		      d_elt, d_rows, cols, i, p_elt);
+
+    matprod_block_xrm(r_elt, s_rows, block_rows, d_elt, d_rows, cols, i, p_elt);
+
     for (j = 0; j < s_rows * cols; j++)
       s_elt[j] += p_elt[j];
   }
