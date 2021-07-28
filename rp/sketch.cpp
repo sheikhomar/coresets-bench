@@ -44,13 +44,14 @@ typedef struct {
   uint_fast64_t *S;  /* array of k full seeds */
 } BCH_conf;
 
-class Matrix
+class Matrix : boost::noncopyable
 {
 private:
   double *_entries;
   size_t _nRows;
   size_t _nColumns;
   size_t _totalSize;
+  bool allocated = false;
 
 public:
   Matrix() { }
@@ -59,13 +60,39 @@ public:
     allocate(rows, columns);
   }
 
+  void deallocate()
+  {
+    if (this->allocated)
+    {
+      std::free(this->_entries);
+      this->_nRows = 0;
+      this->_nColumns = 0;
+      this->_totalSize = 0;
+      this->allocated = false;
+    }
+  }
+
   void allocate(size_t rows, size_t columns)
   {
+    deallocate();
+
+    std::cout << "Allocing memory for matrix: " << rows << "x" << columns <<".\n";
     size_t totalSize = rows * columns * sizeof(double);
     this->_entries = reinterpret_cast<double*>(std::malloc(totalSize));
     this->_nRows = rows;
     this->_nColumns = columns;
     this->_totalSize = totalSize;
+    this->allocated = true;
+  }
+
+  void set(size_t rowIndex, size_t columnIndex, double value)
+  {
+    size_t index = rowIndex * this->_nColumns + columnIndex;
+    if (index > this->_totalSize)
+    {
+      throw std::invalid_argument("Index out of bounds.");
+    }
+    this->_entries[index] = value;
   }
 
   double *data() const { return this->_entries; }
@@ -75,7 +102,7 @@ public:
 
   ~Matrix()
 	{
-    std::free(this->_entries);
+    deallocate();
 	}
 };
 
@@ -459,13 +486,13 @@ sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
     s_elt[i] = 0.0;
   /* matrix to hold result of matrix multiplication */
   //p_part = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-  p_part = Matrix(s_rows, cols);
+  p_part.allocate(s_rows, cols);
   //p_elt = REAL(p_part);
   p_elt = p_part.data();
   /* reserve memory for projection sub-matrix */
   block_max = 256; /* Note: this is hand-tuned for execution speed */
   // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_max));
-  r_part = Matrix(s_rows, block_max);
+  r_part.allocate(s_rows, block_max);
   r_elt = r_part.data();
   for (i = 0; i < d_rows; i += block_max) { /* i: rows in data matrix */
     if (i + block_max < d_rows) {
@@ -476,7 +503,7 @@ sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
       // UNPROTECT(1); /* r_part */
       /* set up a smaller projection matrix */
       // r_part = PROTECT(allocMatrix(REALSXP, s_rows, block_rows));
-      r_part = Matrix(s_rows, block_max);
+      r_part.allocate(s_rows, block_rows);
       // r_elt = REAL(r_part);
       r_elt = r_part.data();
     }
