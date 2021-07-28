@@ -369,13 +369,13 @@ matprod_block_xrm(double *x, int nrx, int ncx,
       sum1 = sum2 = sum3 = sum4 = 0.0;
       t1 = ory + k * nry; /* common adress offset in y */
       for (j = 0; j < ncx % 4; j++) { /* first elements of unrolled loop */
-	sum1 += x[i + j * nrx] * y[j + t1];
+        sum1 += x[i + j * nrx] * y[j + t1];
       }
       for (; j < ncx; j += 4) { /* remainder of unrolled loop */
-	sum1 += x[t2 + j] * y[j + t1];
-	sum2 += x[t2 + j + 1] * y[j + 1 + t1];
-	sum3 += x[t2 + j + 2] * y[j + 2 + t1];
-	sum4 += x[t2 + j + 3] * y[j + 3 + t1];
+        sum1 += x[t2 + j] * y[j + t1];
+        sum2 += x[t2 + j + 1] * y[j + 1 + t1];
+        sum3 += x[t2 + j + 2] * y[j + 2 + t1];
+        sum4 += x[t2 + j + 3] * y[j + 3 + t1];
       }
       z[i + k * nrx] = sum1 + sum2 + sum3 + sum4;
     }
