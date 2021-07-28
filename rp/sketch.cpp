@@ -431,50 +431,51 @@ void sample_int(int n, int N, int *out)
  *  - data: class matrix, storage mode double
  *  - sketch_rows: scalar integer
  */
-// SEXP
-// sketch_cw(SEXP data, SEXP sketch_rows)
-// {
-//   BCH_conf bch;
-//   SEXP sketch, dim;
-//   double *s_elt, *d_elt, sgn;
-//   int s_rows, cols, d_rows, i, h_i, j;
-//   uint_fast64_t rnd, a, b, m;
+void
+sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
+{
+  BCH_conf bch;
+  double *s_elt, *d_elt, sgn;
+  int i, h_i, j;
+  size_t s_rows, cols, d_rows;
+  uint_fast64_t rnd, a, b, m;
 
-//   GetRNGstate(); /* init for ruint() */
-//   dim = getAttrib(data, R_DimSymbol);
-//   d_rows = INTEGER(dim)[0];
-//   cols = INTEGER(dim)[1];
-//   s_rows = INTEGER(sketch_rows)[0];
-//   d_elt = REAL(data);
-//   /* initialise BCH generator */
-//   bch = bch_configure(4);
-//   /* initialise LCG generator for fast universal hashing */
-//   for (m = 1; ((s_rows - 1) >> m) > 0; m++) {
-//     /* s_rows is a power of 2, find the position of the 1-bit ... */
-//   }
-//   /* ... and generate seeds for the linear congruential generator*/
-//   a = lcg_init();
-//   b = lcg_init();
-//   /* create empty sketch and fill with zero */
-//   sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-//   s_elt = REAL(sketch);
-//   for (i = 0; i < s_rows * cols; i++)
-//     s_elt[i] = 0.0;
-//   /* project randomly */
-//   for (i = 0; i < d_rows; i++) {
-//     /* calculate target row by fast universal hashing */
-//     rnd = a * i + b;
-//     h_i = rnd >> (64 - m);
-//     sgn = bch4_gen(i, bch);
-//     for (j = 0; j < cols; j++) {
-//       /* R matrices are in column major storage */
-//       s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
-//     }
-//   }
-//   PutRNGstate();
-//   UNPROTECT(1); /* sketch */
-//   return sketch;
-// }
+  // GetRNGstate(); /* init for ruint() */
+  // dim = getAttrib(data, R_DimSymbol);
+  d_rows = data.rows();
+  cols = data.columns();
+  s_rows = sketch_rows;
+  d_elt = data.data(); // d_elt = REAL(data);
+  /* initialise BCH generator */
+  bch = bch_configure(4);
+  /* initialise LCG generator for fast universal hashing */
+  for (m = 1; ((s_rows - 1) >> m) > 0; m++) {
+    /* s_rows is a power of 2, find the position of the 1-bit ... */
+  }
+  /* ... and generate seeds for the linear congruential generator*/
+  a = lcg_init();
+  b = lcg_init();
+  /* create empty sketch and fill with zero */
+  // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+  sketch.allocate(s_rows, cols);
+  //s_elt = REAL(sketch);
+  s_elt = sketch.data();
+  for (i = 0; i < s_rows * cols; i++)
+    s_elt[i] = 0.0;
+  /* project randomly */
+  for (i = 0; i < d_rows; i++) {
+    /* calculate target row by fast universal hashing */
+    rnd = a * i + b;
+    h_i = rnd >> (64 - m);
+    sgn = bch4_gen(i, bch);
+    for (j = 0; j < cols; j++) {
+      /* R matrices are in column major storage */
+      s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
+    }
+  }
+  //PutRNGstate();
+  //UNPROTECT(1); /* sketch */
+}
 
 /* Calculate a sketch based on Rademacher transforms
  *
@@ -755,7 +756,8 @@ int main()
 
     std::cout << "Data parsing completed!!\n";
 
-    sketch_rad(data, 1000, sketch);
+    //sketch_rad(data, 1000, sketch);
+    sketch_cw(data, 1024, sketch);
 
     std::cout << "Sketch generated!\n";
 
