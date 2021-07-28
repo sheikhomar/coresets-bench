@@ -757,15 +757,26 @@ void parseBoW(const std::string &filePath, Matrix &data, bool transposed = false
 
 int main()
 {
-    Matrix data, sketch;
+    Matrix data, sketch, sketch2;
 
     parseBoW("data/input/docword.enron.txt.gz", data, true);
 
     std::cout << "Data parsing completed!!\n";
 
-    // sketch_rad(data, 1000, sketch);
-    // sketch_cw(data, 1024, sketch);
-    sketch_srht(data, 1024, sketch);
+    std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
+
+    // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
+    sketch_cw(data, 1024, sketch);
+
+    // Clean up.
+    data.deallocate();
+
+    std::cout << "Running the Rademacher algorithm...\n";
+    
+    // Apply the Rademacher algorithm.
+    sketch_rad(sketch, 64, sketch2);
+
+    // sketch_srht(data, 1024, sketch);
 
     std::cout << "Sketch generated!\n";
 
