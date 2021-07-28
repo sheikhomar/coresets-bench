@@ -556,55 +556,60 @@ void sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
     //return sketch;
 }
 
-// SEXP
-// sketch_srht(SEXP data, SEXP sketch_rows)
-// {
-//   BCH_conf bch;
-//   SEXP sketch, tmp, dim;
-//   double *s_elt, *d_elt, *t_elt, sgn, sqrt_rows;
-//   int s_rows, cols, d_rows, i, j,*p;
-//   unsigned int q;
+void sketch_srht(const Matrix &data, size_t sketch_rows, Matrix &sketch)
+{
+    BCH_conf bch;
+    Matrix tmp;
+    double *s_elt, *d_elt, *t_elt, sgn, sqrt_rows;
+    int s_rows, cols, d_rows, i, j, *p;
+    unsigned int q;
 
-//   GetRNGstate(); /* init for ruint() */
-//   dim = getAttrib(data, R_DimSymbol);
-//   d_rows = INTEGER(dim)[0];
-//   cols = INTEGER(dim)[1];
-//   s_rows = INTEGER(sketch_rows)[0];
-//   d_elt = REAL(data);
-//   /* initialise BCH generator */
-//   bch = bch_configure(4);
-//   /* create empty sketch and fill with zero */
-//   sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-//   s_elt = REAL(sketch);
-//   for (i = 0; i < s_rows * cols; i++)
-//     s_elt[i] = 0.0;
-//   /* matrix to store data rows multiplied by +/-1 */
-//   tmp = PROTECT(allocMatrix(REALSXP, d_rows, cols));
-//   t_elt = REAL(tmp);
-//   /* next power of two >= d_rows */
-//   q = 1;
-//   do
-//     q *= 2;
-//   while (q < d_rows);
-//   /* select row randomisation (sample without replacement) */
-//   p = (int *) R_alloc(s_rows, sizeof(int));
-//   sample_int(s_rows, q, p);
-//   /* multiply data rows by +/-1 */
-//   for (i = 0; i < d_rows; i++) {
-//     sgn = bch4_gen(i, bch);
-//     for (j = 0; j < cols; j++)
-//       t_elt[i + j * d_rows] = sgn * d_elt[i + j * d_rows];
-//   }
-//   /* recursively calculate SRHT */
-//   srht_rec(p, s_rows, q, t_elt, d_rows, cols, 0, s_elt, s_rows, 0);
-//   /* normalize */
-//   sqrt_rows = sqrt((double) s_rows);
-//   for (j = 0; j < s_rows * cols; j++)
-//     s_elt[j] /= sqrt_rows;
-//   PutRNGstate();
-//   UNPROTECT(2); /* sketch, tmp */
-//   return sketch;
-// }
+    // GetRNGstate(); /* init for ruint() */
+    // dim = getAttrib(data, R_DimSymbol);
+    d_rows = data.rows();
+    cols = data.columns();
+    s_rows = sketch_rows;
+    // d_elt = REAL(data);
+    d_elt = data.data();
+    /* initialise BCH generator */
+    bch = bch_configure(4);
+    /* create empty sketch and fill with zero */
+    // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+    sketch.allocate(s_rows, cols);
+    // s_elt = REAL(sketch);
+    s_elt = sketch.data();
+    for (i = 0; i < s_rows * cols; i++)
+        s_elt[i] = 0.0;
+    /* matrix to store data rows multiplied by +/-1 */
+    //tmp = PROTECT(allocMatrix(REALSXP, d_rows, cols));
+    tmp.allocate(d_rows, cols);
+    // t_elt = REAL(tmp);
+    t_elt = tmp.data();
+    /* next power of two >= d_rows */
+    q = 1;
+    do
+        q *= 2;
+    while (q < d_rows);
+    /* select row randomisation (sample without replacement) */
+    p = (int *)R_alloc(s_rows, sizeof(int));
+    sample_int(s_rows, q, p);
+    /* multiply data rows by +/-1 */
+    for (i = 0; i < d_rows; i++)
+    {
+        sgn = bch4_gen(i, bch);
+        for (j = 0; j < cols; j++)
+            t_elt[i + j * d_rows] = sgn * d_elt[i + j * d_rows];
+    }
+    /* recursively calculate SRHT */
+    srht_rec(p, s_rows, q, t_elt, d_rows, cols, 0, s_elt, s_rows, 0);
+    /* normalize */
+    sqrt_rows = sqrt((double)s_rows);
+    for (j = 0; j < s_rows * cols; j++)
+        s_elt[j] /= sqrt_rows;
+    //PutRNGstate();
+    //UNPROTECT(2); /* sketch, tmp */
+    //return sketch;
+}
 
 void srht_rec(const int *p, int k, int q,
               double *data, int d_rows, int d_cols, int d_offset,
@@ -758,8 +763,9 @@ int main()
 
     std::cout << "Data parsing completed!!\n";
 
-    //sketch_rad(data, 1000, sketch);
-    sketch_cw(data, 1024, sketch);
+    // sketch_rad(data, 1000, sketch);
+    // sketch_cw(data, 1024, sketch);
+    sketch_srht(data, 1024, sketch);
 
     std::cout << "Sketch generated!\n";
 
