@@ -102,7 +102,7 @@ def load_dataset(input_path: str) -> object:
         "docword": load_bag_of_words_dataset,
         "Tower": load_tower_dataset,
         "USCensus1990": load_census_dataset,
-        "covtype2": load_covertype_dataset
+        "covtype": load_covertype_dataset
     }
     for name_like, loader_fn in loader_fn_map.items():
         if name_like in input_path:
