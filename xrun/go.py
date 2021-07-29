@@ -141,6 +141,7 @@ class ExperimentRunner:
                     run.process_id = -2
                     run.save_json(file_path)
                     shutil.move(file_path, f"{self._dir_completed}/{file_path.name}")
+                    shutil.copy(src=f"{self._dir_completed}/{file_path.name}", dst=run.output_dir)
                 else:
                     print(" - Process stopped but done.out file does not exist! Discarding run.")
                     self._move_to_discarded(file_path)
