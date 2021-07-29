@@ -1,4 +1,5 @@
 from timeit import default_timer as timer
+from typing import List
 
 import click
 import numpy as np
@@ -8,9 +9,7 @@ from sklearn.decomposition import TruncatedSVD
 from xrun.data.loader import load_dataset
 
 
-def reduce_dim(input_path: str, target_dim: float) -> None:
-    X = load_dataset(input_path)
-
+def perform_projection(X, target_dim: int, input_path: str):
     svd = TruncatedSVD(
         n_components=int(target_dim),
         algorithm="arpack",
@@ -43,6 +42,24 @@ def reduce_dim(input_path: str, target_dim: float) -> None:
     )
 
 
+def reduce_dim(input_path: str, target_dims: List[int]) -> None:
+    X = load_dataset(input_path)
+    for target_dim in target_dims:
+        perform_projection(X, target_dim, input_path)
+
+
+def validate_target_dims(ctx, param, value):
+    if value is None:
+        raise Exception("Invalid target dimension")
+    ret_val = []
+    for s in value.split(","):
+        try:
+            ret_val.append(int(s))
+        except ValueError:
+            raise Exception(f"Dimension is not an integer: {s}")
+    return ret_val
+
+
 @click.command(help="Dimensionality Reduction via SVD.")
 @click.option(
     "-i",
@@ -52,14 +69,14 @@ def reduce_dim(input_path: str, target_dim: float) -> None:
 )
 @click.option(
     "-d",
-    "--target-dim",
-    type=click.INT,
+    "--target-dims",
     required=True,
+    callback=validate_target_dims
 )
-def main(input_path: str, target_dim: int):
+def main(input_path: str, target_dims: List[int]):
     reduce_dim(
         input_path=input_path,
-        target_dim=target_dim,
+        target_dims=target_dims,
     )
 
 
