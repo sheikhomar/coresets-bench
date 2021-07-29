@@ -56,9 +56,9 @@ def parse_bag_of_words_dataset(input_path: str) -> csr_matrix:
     start_time = timer()
 
     return csr_matrix((values.astype(np.double), (row_idx-1, column_idx-1)), shape=data_shape)
-    
 
-def reduce_dim(input_path: str, target_dim: float, output_path: str) -> None:
+
+def reduce_dim(input_path: str, target_dim: float) -> None:
     if "docword" in input_path:
         X = parse_bag_of_words_dataset(input_path)
         svd = TruncatedSVD(
@@ -73,7 +73,24 @@ def reduce_dim(input_path: str, target_dim: float, output_path: str) -> None:
         print(f"Elapsed time: {end_time - start_time:.2f} secs")
         print(f"Explained variance ratios: {np.sum(svd.explained_variance_ratio_):0.4}")
 
-        # np.savetxt()
+        print(f"Saving transformed data to disk...")
+        np.savetxt(
+            fname=f"{input_path}-svd-d{target_dim}.txt.gz",
+            X=X_reduced,
+            delimiter=",",
+        )
+        np.savez_compressed(
+            file=f"{input_path}-svd-d{target_dim}.npz",
+            X=X_reduced,
+        )
+        print(f"Saving components to disk...")
+        np.savez_compressed(
+            file=f"{input_path}-svd-d{target_dim}-output.npz",
+            components=svd.components_,
+            explained_variance=svd.explained_variance_,
+            explained_variance_ratio=svd.explained_variance_ratio_,
+            singular_values=svd.singular_values_,
+        )
 
 
 @click.command(help="Dimensionality Reduction via SVD.")
