@@ -75,6 +75,7 @@ def load_original_data(coreset_file_path: Path):
         "census": lambda: loader.load_census_dataset("data/input/USCensus1990.data.txt"),
         "tower": lambda: loader.load_tower_dataset("data/input/Tower.txt"),
         "covertype": lambda: loader.load_covertype_dataset("data/input/covtype.data.gz"),
+        "enron": lambda: loader.load_bag_of_words_dataset("data/input/docword.enron.txt.gz").todense(),
     }
 
     if dataset not in loaders:
