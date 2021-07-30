@@ -16,6 +16,7 @@ from tqdm import tqdm
 from sklearn.metrics import pairwise_distances
 
 from xrun.gen import KNOWN_ALGORITHMS, generate_random_seed
+from xrun.data import loader
 
 KMEANS_PATH = "kmeans/bin/kmeans.exe"
 
@@ -66,65 +67,14 @@ def compute_centers(result_file_path: Path) -> Path:
     proc.wait()
     return center_path
 
-
-def load_census_data():
-    file_path = Path("data/input/USCensus1990.data.txt")
-    print(f"Loading Census data from {file_path}...")
-    start_time = timer()
-    data = np.loadtxt(
-        fname=file_path,
-        dtype=np.double,
-        delimiter=",",
-        skiprows=1,
-        unpack=False
-    )
-    end_time = timer()
-    print(f"Loaded in {end_time - start_time:.2f} secs")
-    return data[:,1:]
-
-
-def load_tower_dataset():
-    file_path = Path("data/input/Tower.txt")
-    print(f"Loading Tower dataset from {file_path}...")
-    start_time = timer()
-    data = np.loadtxt(
-        fname=file_path,
-        dtype=np.double,
-        delimiter=",",
-        skiprows=0,
-        unpack=False
-    )
-    end_time = timer()
-    print(f"Loaded in {end_time - start_time:.2f} secs")
-    
-    D = 3
-    N = int(data.shape[0] / D)
-    return data.reshape((N, D))
-
-
-def load_covertype_dataset():
-    file_path = Path("data/input/covtype.data.gz")
-    print(f"Loading Covertype dataset from {file_path}...")
-    start_time = timer()
-    data = np.loadtxt(
-        fname=file_path,
-        dtype=np.double,
-        delimiter=",",
-        skiprows=0,
-        unpack=False
-    )
-    end_time = timer()
-    print(f"Loaded in {end_time - start_time:.2f} secs")
-    return data[:, 0:-1] # Skip the last column which is the classification column
-
 datasets = dict()
 
 def load_original_data(coreset_file_path: Path):
     dataset, algorithm, k = re.findall(r"/.+/(.+)/(.+)-k(\d+)-", str(coreset_file_path))[0]
     loaders = {
-        "census": load_census_data,
-        "tower": load_tower_dataset,
-        "covertype": load_covertype_dataset
+        "census": lambda: loader.load_census_dataset("data/input/USCensus1990.data.txt"),
+        "tower": lambda: loader.load_tower_dataset("data/input/Tower.txt"),
+        "covertype": lambda: loader.load_covertype_dataset("data/input/covtype.data.gz"),
     }
 
     if dataset not in loaders:
