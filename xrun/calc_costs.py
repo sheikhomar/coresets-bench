@@ -36,7 +36,8 @@ def unzip_file(input_path: Path) -> Path:
 
 def compute_centers(result_file_path: Path) -> Path:
     center_path = result_file_path.parent / "centers.txt"
-    if center_path.exists():
+    
+    if center_path.exists() and center_path.stat().st_size > 0:
         return center_path
 
     if not os.path.exists(KMEANS_PATH):
