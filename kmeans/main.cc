@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
     int k = atoi(argv[2]);
     int dimension = atoi(argv[3]);
-    std::ofstream output(argv[4], std::ifstream::out);
+    std::string outputPath(argv[4]);
     int iterations = atoi(argv[5]);
     bool projections = false;
 
@@ -57,10 +57,12 @@ int main(int argc, char **argv)
     }
     */
 
-    std::cout << "Outputting final centers" << std::endl;
+    std::cout << "Outputting final centers to " << outputPath << std::endl;
+    std::ofstream output(outputPath, std::ifstream::out);
 
     for (int i = 0; i < k; i++)
     {
+        std::cout << " - Writing center " << (i+1) << std::endl;
         output << "1 ";
         for (int j = 0; j < dimension; j++)
         {
