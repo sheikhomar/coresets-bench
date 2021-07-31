@@ -22,9 +22,9 @@ KMEANS_PATH = "kmeans/bin/kmeans.exe"
 
 
 def unzip_file(input_path: Path) -> Path:
-    print(f"Unzipping file {input_path}...")
     output_path = Path(os.path.splitext(input_path)[0])
     if not output_path.exists():
+        print(f"Unzipping file {input_path}...")
         p = subprocess.Popen(
             args=["gunzip", "-k", str(input_path)],
             start_new_session=True
@@ -43,9 +43,11 @@ def compute_centers(result_file_path: Path) -> Path:
     if not os.path.exists(KMEANS_PATH):
         raise Exception(f"Program '{KMEANS_PATH}' cannot be found. You can build it: make -C kmeans")
 
+    start_time = timer()
+
     with open(result_file_path, 'r') as f:
         line1 = next(f)  # Skip the first line
-        line2 = next(f)  # Read point data
+        line2 = next(f)  # Read the first point data to figure out dimensions
 
     # When counting the number of dimensions for points skip the
     # first entry as it is the weight of the point.
@@ -66,6 +68,8 @@ def compute_centers(result_file_path: Path) -> Path:
         start_new_session=True
     )
     proc.wait()
+    end_time = timer()
+    print(f"k-means++ centers computed in {end_time - start_time:.2f} secs")
     return center_path
 
 datasets = dict()
