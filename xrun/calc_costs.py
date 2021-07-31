@@ -164,6 +164,8 @@ def main(results_dir: str) -> None:
         centers_file_path = compute_centers(data_file_path)
         compute_real_cost(data_file_path, centers_file_path)
         compute_coreset_costs(data_file_path, centers_file_path)
+        print(f"Done processing file {index+1} of {total_files}. Removing {data_file_path}...")
+        os.remove(data_file_path)
 
 
 if __name__ == "__main__":
