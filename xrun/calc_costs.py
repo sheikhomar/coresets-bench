@@ -163,6 +163,13 @@ def main(results_dir: str) -> None:
     
     total_files = len(output_paths)
     for index, file_path in enumerate(output_paths):
+        costs_computed = np.all([
+            os.path.exists(file_path.parent / cfn)
+            for cfn in ["real_cost.txt", "coreset_cost.txt"]
+        ])
+        if costs_computed:
+            continue
+
         print(f"Processing file {index+1} of {total_files}...")
         data_file_path = unzip_file(file_path)
         centers_file_path = compute_centers(data_file_path)
