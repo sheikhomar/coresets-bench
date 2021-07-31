@@ -170,7 +170,7 @@ def main(results_dir: str) -> None:
         if costs_computed:
             continue
 
-        print(f"Processing file {index+1} of {total_files}...")
+        print(f"Processing file {index+1} of {total_files}: {file_path}")
         data_file_path = unzip_file(file_path)
         centers_file_path = compute_centers(data_file_path)
         compute_real_cost(data_file_path, centers_file_path)
