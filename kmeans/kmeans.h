@@ -132,9 +132,10 @@ bool KMEANS::reGroupPoints(triple<double, double*, int>**points, double**centers
     {
         bool result = true;
         double weight[k];
-        double newCenter[k][dimension];
+        double** newCenter = new double*[k];
         for (int i = 0; i < k; i++)
         {
+            newCenter[i] = new double[dimension];
             weight[i] = 0;
             for (int j = 0; j < dimension; j++)
             {
