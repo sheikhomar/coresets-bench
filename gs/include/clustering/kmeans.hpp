@@ -30,7 +30,7 @@ namespace clustering
          * @param maxIterations Maximum number of iterations.
          * @param convergenceDiff The difference in the norms of the centroids when to stop k-Means iteration.
          */
-        KMeans(uint numOfClusters, bool initKMeansPlusPlus = true, bool precomputeDistances = false, uint maxIterations = 100, double convergenceDiff = 0.0001);
+        KMeans(uint numOfClusters, bool initKMeansPlusPlus = true, bool precomputeDistances = false, uint maxIterations = 300, double convergenceDiff = 0.0001);
 
         /**
          * @brief Runs the algorithm.
