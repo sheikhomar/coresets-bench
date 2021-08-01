@@ -13,10 +13,10 @@ GroupSampling::GroupSampling(size_t numberOfClusters, size_t targetSamplesInCore
 std::shared_ptr<Coreset>
 GroupSampling::run(const blaze::DynamicMatrix<double> &data)
 {
-    clustering::KMeans kMeansAlg(this->NumberOfClusters);
+    clustering::KMeans kMeansAlg(this->NumberOfClusters, true, false, 10);
     auto clusters = kMeansAlg.run(data);
     auto coreset = run(clusters);
-    coreset->transfer(data, clusters->getCentroids());
+    coreset->setClusterAssignments(clusters->getClusterAssignments());
     return coreset;
 }
 

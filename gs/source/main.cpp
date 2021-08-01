@@ -52,7 +52,7 @@ void writeDoneFile(const std::string &outputDir)
     outData.close();
 }
 
-void outputResultsToFile(const std::shared_ptr<coresets::Coreset> coreset, const std::string &outputDir)
+void outputResultsToFile(const std::shared_ptr<blaze::DynamicMatrix<double>> originalDataPoints, const std::shared_ptr<coresets::Coreset> coreset, const std::string &outputDir)
 {
   std::string outputFilePath = outputDir + "/results.txt.gz";
   printf("Write results to %s...\n", outputFilePath.c_str());
@@ -64,27 +64,7 @@ void outputResultsToFile(const std::shared_ptr<coresets::Coreset> coreset, const
   fos.push(fileStream);
   std::ostream outData(&fos);
 
-  // Output coreset size
-  outData << coreset->size() << "\n";
-
-  // Output coreset points
-  for (size_t i = 0; i < coreset->size(); ++i)
-  {
-    auto point = coreset->at(i);
-
-    // Output weight
-    outData << point->Weight << " ";
-
-    // Output center of gravity
-    auto dimensions = coreset->Data.columns();
-    for (size_t j = 0; j < dimensions; ++j)
-    {
-        outData << coreset->Data.at(i, j);
-        if (j < dimensions - 1)
-          outData << " ";
-    }
-    outData << "\n";
-  }
+  coreset->writeToStream(*originalDataPoints, outData);
 }
 
 int main(int argc, char **argv)
@@ -192,7 +172,7 @@ int main(int argc, char **argv)
   
   std::cout << "Algorithm completed in " << timeCoresetComputation.elapsedStr() << "\n";
 
-  outputResultsToFile(coreset, outputDir);
+  outputResultsToFile(data, coreset, outputDir);
   writeDoneFile(outputDir);
 }
 

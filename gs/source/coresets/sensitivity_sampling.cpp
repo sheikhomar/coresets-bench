@@ -17,7 +17,7 @@ SensitivitySampling::run(const blaze::DynamicMatrix<double> &data)
 
     auto coreset = generateCoresetPoints(clusterAssignments);
 
-    coreset->transfer(data, result->getCentroids());
+    coreset->setClusterAssignments(result->getClusterAssignments());
 
     return coreset;
 }

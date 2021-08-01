@@ -25,7 +25,7 @@ BasicClustering::run(const blaze::DynamicMatrix<double> &data)
         coreset->addCenter(c, weight);
     }
 
-    coreset->transfer(data, result->getCentroids());
+    coreset->setClusterAssignments(clusterAssignments);
 
     return coreset;
 }

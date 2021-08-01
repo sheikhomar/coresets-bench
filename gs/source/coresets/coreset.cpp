@@ -3,7 +3,7 @@
 
 using namespace coresets;
 
-Coreset::Coreset(size_t targetSize) : TargetSize(targetSize)
+Coreset::Coreset(size_t targetSize) : TargetSize(targetSize), clusterAssignments(0, 0)
 {
 }
 
@@ -69,25 +69,46 @@ Coreset::size() const
     return this->points.size();
 }
 
-void Coreset::transfer(const blaze::DynamicMatrix<double> &dataPoints, const blaze::DynamicMatrix<double> &centers)
+void Coreset::setClusterAssignments(const clustering::ClusterAssignmentList &assignments)
 {
-    assert(dataPoints.columns() == centers.columns());
+    this->clusterAssignments = assignments;
+}
 
-    auto m = this->points.size();
-    auto d = dataPoints.columns();
-    this->Data.resize(m, d);
+void Coreset::writeToStream(const blaze::DynamicMatrix<double> &originalDataPoints, std::ostream &out)
+{
+    const size_t m = this->points.size();
+    const size_t d = originalDataPoints.columns();
 
-    for (size_t i = 0; i < points.size(); i++)
+    // Compute the centers using the stored cluster assignments.
+    blaze::DynamicMatrix<double> centers;
+    this->clusterAssignments.calcCenters(originalDataPoints, centers);
+
+    // Output coreset size
+    out << m << "\n";
+
+    // Output coreset points
+    for (auto &&point : points)
     {
-        auto point = points[i];
+        // Output coreset point weight
+        out << point->Weight << " ";
 
-        if (point->IsCenter)
+        // Output coreset point entries.
+        for (size_t j = 0; j < d; ++j)
         {
-            blaze::row(this->Data, i) = blaze::row(centers, point->Index);
+            if (point->IsCenter)
+            {
+                out << centers.at(point->Index, j);
+            }
+            else
+            {
+                out << originalDataPoints.at(point->Index, j);
+            }
+
+            if (j < d - 1)
+            {
+                out << " ";
+            }
         }
-        else
-        {
-            blaze::row(this->Data, i) = blaze::row(dataPoints, point->Index);
-        }
+        out << "\n";
     }
 }

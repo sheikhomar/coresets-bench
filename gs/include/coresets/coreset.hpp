@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <clustering/kmeans.hpp>
+#include <clustering/cluster_assignment_list.hpp>
 #include <utils/random.hpp>
 
 namespace coresets
@@ -23,6 +24,7 @@ namespace coresets
     class Coreset
     {
         std::vector<std::shared_ptr<WeightedPoint>> points;
+        clustering::ClusterAssignmentList clusterAssignments;
 
     public:
         /**
@@ -73,8 +75,13 @@ namespace coresets
         findPoint(size_t index, bool isCenter = false);
 
         /**
-         * Copy actual data.
+         * @brief Sets the cluster assignment.
          */
-        void transfer(const blaze::DynamicMatrix<double> &dataPoints, const blaze::DynamicMatrix<double> &centers);
+        void setClusterAssignments(const clustering::ClusterAssignmentList &assignments);
+
+        /**
+         * @brief Write coreset points to the given output stream.
+         */
+        void writeToStream(const blaze::DynamicMatrix<double> &originalDataPoints, std::ostream &out);
     };
 }
