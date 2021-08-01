@@ -156,3 +156,43 @@ ClusterAssignmentList::getNormalizedCosts() const
 {
     return distances / this->getTotalCost();
 }
+
+void ClusterAssignmentList::calcCenters(const blaze::DynamicMatrix<double> &dataPoints, blaze::DynamicMatrix<double> &newCenters)
+{
+    assert(dataPoints.rows() == this->numOfPoints);
+
+    const size_t n = dataPoints.rows();
+    const size_t d = dataPoints.columns();
+    const size_t k = this->numOfClusters;
+
+    if (newCenters.rows() != k or newCenters.columns() != d)
+    {
+        newCenters.resize(n, d);
+    }
+
+    // Reset variables.
+    newCenters = 0;
+    std::vector<size_t> clusterMemberCounts(k);
+    for (size_t c = 0; c < k; c++)
+    {
+        clusterMemberCounts[c] = 0;
+    }
+
+    for (size_t p = 0; p < n; p++)
+    {
+        const size_t c = this->clusters[p];
+
+        // Sum all points assigned in cluster c
+        blaze::row(newCenters, c) += blaze::row(dataPoints, p);
+
+        // Count number of points in each cluster.
+        clusterMemberCounts[c] += 1;
+    }
+
+    // Divide centers by the number of points in each cluster.
+    for (size_t c = 0; c < k; c++)
+    {
+        const auto count = std::max<size_t>(1, clusterMemberCounts[c]);
+        blaze::row(newCenters, c) /= count;
+    }
+}

@@ -115,6 +115,12 @@ namespace clustering
         blaze::DynamicVector<double>
         getNormalizedCosts() const;
 
+        /**
+         * @brief Compute cluster centers using current assignments.
+         */
+        void
+        calcCenters(const blaze::DynamicMatrix<double> &dataPoints, blaze::DynamicMatrix<double> &centers);
+
     private:
         /**
          * The total number of points in the dataset.
