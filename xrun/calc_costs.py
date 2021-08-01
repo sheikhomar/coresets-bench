@@ -150,6 +150,20 @@ def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path) -> P
     return cost_file_path
 
 
+def find_unprocesses_result_files(results_dir: str) -> List[Path]:
+    search_dir = Path(results_dir)
+    output_paths = list(search_dir.glob('**/results.txt.gz'))
+    return_paths = []
+    for file_path in output_paths:
+        costs_computed = np.all([
+            os.path.exists(file_path.parent / cfn)
+            for cfn in ["real_cost.txt", "coreset_cost.txt"]
+        ])
+        if not costs_computed:
+            return_paths.append(file_path)
+    return return_paths
+
+
 @click.command(help="Compute costs for coresets.")
 @click.option(
     "-r",
@@ -158,18 +172,9 @@ def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path) -> P
     required=True,
 )
 def main(results_dir: str) -> None:
-    parent_dir = Path(results_dir)
-    output_paths = list(parent_dir.glob('**/results.txt.gz'))
-    
+    output_paths = find_unprocesses_result_files(results_dir)
     total_files = len(output_paths)
     for index, file_path in enumerate(output_paths):
-        costs_computed = np.all([
-            os.path.exists(file_path.parent / cfn)
-            for cfn in ["real_cost.txt", "coreset_cost.txt"]
-        ])
-        if costs_computed:
-            continue
-
         print(f"Processing file {index+1} of {total_files}: {file_path}")
         data_file_path = unzip_file(file_path)
         centers_file_path = compute_centers(data_file_path)
