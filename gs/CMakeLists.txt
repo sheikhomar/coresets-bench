@@ -45,6 +45,3 @@ target_link_libraries(${PROJECT_NAME} PRIVATE -llapack)
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-
-add_subdirectory(libs/vincentlaucsb-csv-parser)
-target_link_libraries(${PROJECT_NAME} PRIVATE csv)
