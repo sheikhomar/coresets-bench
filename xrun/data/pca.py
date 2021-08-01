@@ -3,25 +3,20 @@ from timeit import default_timer as timer
 import click
 import numpy as np
 
-from sklearn.decomposition import TruncatedSVD, PCA
+from sklearn.decomposition import PCA
 
 from xrun.data.loader import load_dataset
 
 
-def reduce_dim(input_path: str, target_dim: float, algorithm: str) -> None:
+def reduce_dim(input_path: str, target_dim: int) -> None:
     X = load_dataset(input_path)
-
-    if algorithm == "lapack":
-        algorithm = "full"
-    else:
-        algorithm = "arpack"
 
     pca = PCA(
         n_components=int(target_dim),
-        svd_solver=algorithm,
+        svd_solver="full",
     )
 
-    print(f"Computing PCA with target dimensions {target_dim} using solver {algorithm}...")
+    print(f"Computing PCA with target dimensions {target_dim} using solver LAPACK...")
     start_time = timer()
     X_reduced = pca.fit_transform(X)
     end_time = timer()
@@ -65,18 +60,10 @@ def reduce_dim(input_path: str, target_dim: float, algorithm: str) -> None:
     type=click.INT,
     required=True,
 )
-@click.option(
-    "-a",
-    "--algorithm",
-    type=click.STRING,
-    required=True,
-    help="Use 'lapack' or 'arpack'"
-)
-def main(input_path: str, target_dim: int, algorithm: str):
+def main(input_path: str, target_dim: int):
     reduce_dim(
         input_path=input_path,
         target_dim=target_dim,
-        algorithm=algorithm
     )
 
 
