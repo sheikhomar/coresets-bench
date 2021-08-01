@@ -19,7 +19,9 @@ KNOWN_ALGORITHMS = [
 
 KNOWN_DATASETS = [
     "covertype",
+    "covertypelowd",
     "census",
+    "censuslowd",
     "tower",
     "enron"
 ]
@@ -71,6 +73,8 @@ def validate_datasets(ctx, param, value):
             ret_val.append("census")
         elif s in ["t", "to", "tower"]:
             ret_val.append("tower")
+        elif s in KNOWN_DATASETS:
+            ret_val.append(s)
         else:
             raise Exception(f"Known dataset: {s}")
     return ret_val
@@ -122,7 +126,9 @@ def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datase
 
     dataset_k_ranges = {
         "census": [10, 20, 30, 40, 50],
+        "censuslowd": [10, 20, 30, 40, 50],
         "covertype": [10, 20, 30, 40, 50],
+        "covertypelowd": [10, 20, 30, 40, 50],
         "enron": [10, 20, 30, 40, 50],
         "tower": [20, 40, 60, 80, 100],
     }
