@@ -7,6 +7,7 @@
 #include <coresets/stream_km.hpp>
 #include <data/data_parser.hpp>
 #include <data/bow_parser.hpp>
+#include <data/csv_parser.hpp>
 #include <data/census_parser.hpp>
 #include <data/covertype_parser.hpp>
 #include <data/tower_parser.hpp>
@@ -71,14 +72,15 @@ int main(int argc, char **argv)
 {
   if (argc < 8)
   {
-    std::cout << "Usage: algorithm dataset k m output_path seed" << std::endl;
-    std::cout << "  algorithm   = algorithm" << std::endl;
-    std::cout << "  dataset     = dataset name" << std::endl;
-    std::cout << "  data_path   = file path to dataset" << std::endl;
-    std::cout << "  k           = number of desired centers" << std::endl;
-    std::cout << "  m           = coreset size" << std::endl;
-    std::cout << "  seed        = random seed" << std::endl;
-    std::cout << "  output_dir  = path to output results" << std::endl;
+    std::cout << "Usage: algorithm dataset k m seed output_path [low_data_path]" << std::endl;
+    std::cout << "  algorithm     = algorithm" << std::endl;
+    std::cout << "  dataset       = dataset name" << std::endl;
+    std::cout << "  data_path     = file path to dataset" << std::endl;
+    std::cout << "  k             = number of desired centers" << std::endl;
+    std::cout << "  m             = coreset size" << std::endl;
+    std::cout << "  seed          = random seed" << std::endl;
+    std::cout << "  output_dir    = path to output results" << std::endl;
+    std::cout << "  low_data_path = path to low-dimensional dataset" << std::endl;
     std::cout << std::endl;
     std::cout << "7 arguments expected, got " << argc - 1 << ":" << std::endl;
     for (int i = 1; i < argc; ++i)
@@ -93,6 +95,14 @@ int main(int argc, char **argv)
   size_t m = std::stoul(argv[5]);
   int randomSeed = std::stoi(argv[6]);
   std::string outputDir(argv[7]);
+  std::string lowDimDataFilePath;
+  bool useLowDimDataset;
+
+  if (argc > 8)
+  {
+    lowDimDataFilePath.assign(argv[8]);
+    useLowDimDataset = true;
+  }
 
   boost::algorithm::to_lower(algorithmName);
   boost::algorithm::trim(algorithmName);
@@ -101,12 +111,13 @@ int main(int argc, char **argv)
   boost::algorithm::trim(datasetName);
 
   std::cout << "Running " << algorithmName << " with following parameters:\n";
-  std::cout << " - Dataset:      " << datasetName << "\n";
-  std::cout << " - Input path:   " << dataFilePath << "\n";
-  std::cout << " - Clusters:     " << k << "\n";
-  std::cout << " - Coreset size: " << m << "\n";
-  std::cout << " - Random Seed:  " << randomSeed << "\n";
-  std::cout << " - Output dir:   " << outputDir << "\n";
+  std::cout << " - Dataset:       " << datasetName << "\n";
+  std::cout << " - Input path:    " << dataFilePath << "\n";
+  std::cout << " - Low-D dataset: " << lowDimDataFilePath << "\n";
+  std::cout << " - Clusters:      " << k << "\n";
+  std::cout << " - Coreset size:  " << m << "\n";
+  std::cout << " - Random Seed:   " << randomSeed << "\n";
+  std::cout << " - Output dir:    " << outputDir << "\n";
 
   std::cout << "Initializing randomess with random seed: " << randomSeed << "\n";
   utils::Random::initialize(randomSeed);
@@ -134,13 +145,24 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  std::cout << "Parsing data: \n";
+  std::shared_ptr<blaze::DynamicMatrix<double>> data;
+  {
+    utils::StopWatch timeDataParsing(true);
 
-  utils::StopWatch timeDataParsing(true);
+    if (useLowDimDataset)
+    {
+      std::cout << "Parsing low-dimensional data:\n";
+      data::CsvParser csvParser;
+      data = csvParser.parse(lowDimDataFilePath);
+    }
+    else 
+    {
+      std::cout << "Parsing data:\n";
+      data = dataParser->parse(dataFilePath);
+    }
 
-  auto data = dataParser->parse(dataFilePath);
-
-  std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
+    std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
+  }
 
   std::cout << "Begin coreset algorithm: " << algorithmName << "\n";
   std::shared_ptr<coresets::Coreset> coreset;
@@ -171,6 +193,19 @@ int main(int argc, char **argv)
   }
   
   std::cout << "Algorithm completed in " << timeCoresetComputation.elapsedStr() << "\n";
+
+  if (useLowDimDataset)
+  {
+    // We used low-dimensional data to compute the coreset.
+    // Get rid of the low-dimensional data and load the original data.
+    data->resize(0, 0, false);
+    data->shrinkToFit();
+
+    std::cout << "Parsing original data:\n";
+    utils::StopWatch timeDataParsing(true);
+    data = dataParser->parse(dataFilePath);
+    std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
+  }
 
   outputResultsToFile(data, coreset, outputDir);
   writeDoneFile(outputDir);
