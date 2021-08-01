@@ -29,15 +29,15 @@ def reduce_dim(input_path: str, target_dim: float, algorithm: str) -> None:
     print(f"Explained variance ratios: {np.sum(pca.explained_variance_ratio_):0.4}")
 
     print(f"Saving transformed data to disk...")
+    start_time = timer()
     np.savetxt(
         fname=f"{input_path}-pca-d{target_dim}.txt.gz",
         X=X_reduced,
         delimiter=",",
     )
-    np.savez_compressed(
-        file=f"{input_path}-pca-d{target_dim}.npz",
-        X=X_reduced,
-    )
+    end_time = timer()
+    print(f"Storing data to disk took {end_time - start_time:.2f} secs")
+
     print(f"Saving components to disk...")
     np.savez_compressed(
         file=f"{input_path}-pca-d{target_dim}-output.npz",
