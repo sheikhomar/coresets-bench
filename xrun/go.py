@@ -15,11 +15,13 @@ from tqdm import tqdm
 @dataclass
 class Dataset:
     name: str
-    download_url: str
+    download_url: Optional[str]
     file_size: int
 
     @property
     def local_file_name(self) -> str:
+        if self.download_url is None:
+            return ""
         return os.path.basename(self.download_url)
 
     @property
@@ -77,26 +79,36 @@ class ExperimentRunner:
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt",
                     file_size=361344227
                 ),
+        "censuslowd": Dataset(
+                    name="censuslowd",
+                    download_url=None,
+                    file_size=0
+                ),
         "covertype": Dataset(
                     name="covertype",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz",
                     file_size=11240707
+                ),
+        "covertypelowd": Dataset(
+                    name="covertypelowd",
+                    download_url=None,
+                    file_size=0
                 ),
         "enron": Dataset(
                     name="enron",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.enron.txt.gz",
                     file_size=12313965
                 ),
-        "pubmed": Dataset(
-                    name="pubmed",
-                    download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.pubmed.txt.gz",
-                    file_size=1878648166
-                ),
-        "nytimes": Dataset(
-                    name="nytimes",
-                    download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
-                    file_size=234225967
-                ),
+        # "pubmed": Dataset(
+        #             name="pubmed",
+        #             download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.pubmed.txt.gz",
+        #             file_size=1878648166
+        #         ),
+        # "nytimes": Dataset(
+        #             name="nytimes",
+        #             download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
+        #             file_size=234225967
+        #         ),
         "tower": Dataset(
                     name="tower",
                     download_url="http://homepages.uni-paderborn.de/frahling/instances/Tower.txt",
@@ -213,13 +225,19 @@ class ExperimentRunner:
         run_details.save_json(run_file_path)
 
     def _build_command(self, run: RunInfo, experiment_dir: Path) -> List[str]:
-        data_file_path = self._datasets[run.dataset].local_file_path
+        low_d_dataset = "lowd" in run.dataset
+        dataset_name = run.dataset
+
+        if low_d_dataset:
+            dataset_name = run.dataset.replace("lowd", "")
+
+        data_file_path = self._datasets[dataset_name].local_file_path
 
         if run.algorithm == "bico":
             algorithm_exe_path = "bico/bin/BICO_Quickstart.exe"
             cmd = [
                 algorithm_exe_path,
-                run.dataset, # Dataset
+                dataset_name, # Dataset
                 str(data_file_path), # Input path
                 str(run.k), # Number of clusters
                 str(run.m), # Coreset size
@@ -232,13 +250,18 @@ class ExperimentRunner:
             cmd = [
                 algorithm_exe_path,
                 run.algorithm,
-                run.dataset, # Dataset
+                dataset_name, # Dataset
                 str(data_file_path), # Input path
                 str(run.k), # Number of clusters
                 str(run.m), # Coreset size
                 str(run.randomSeed), # Random Seed
                 str(experiment_dir), # Output dir
             ]
+            if low_d_dataset:
+                low_d_dataset_path = f"{data_file_path}-pca-d{run.k}.txt.gz"
+                if not os.path.exists(low_d_dataset_path):
+                    raise Exception(f"Low dimensional dataset does not exist: {low_d_dataset_path}...")
+                cmd.append(low_d_dataset_path)
             return cmd
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
@@ -288,6 +311,9 @@ class ExperimentRunner:
             self._ensure_dataset_exists(dataset)
 
     def _ensure_dataset_exists(self, dataset: Dataset):
+        if dataset.download_url is None:
+            return
+
         local_file_path = dataset.local_file_path
 
         if not local_file_path.parent.exists():
