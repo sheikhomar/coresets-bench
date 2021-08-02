@@ -97,12 +97,28 @@ def load_bag_of_words_dataset(input_path: str) -> csr_matrix:
     return csr_matrix((values.astype(np.double), (row_idx-1, column_idx-1)), shape=data_shape)
 
 
+def load_sift10m_dataset(input_path: str):
+    print(f"Loading SIFT10M dataset from {input_path}...")
+    start_time = timer()
+    data = np.loadtxt(
+        fname=input_path,
+        dtype=np.double,
+        delimiter=",",
+        skiprows=0,
+        unpack=False
+    )
+    end_time = timer()
+    print(f"Loaded in {end_time - start_time:.2f} secs")
+    return data
+
+
 def load_dataset(input_path: str) -> object:
     loader_fn_map : Dict[str, Callable[[str], object]] = {
         "docword": load_bag_of_words_dataset,
         "Tower": load_tower_dataset,
         "USCensus1990": load_census_dataset,
-        "covtype": load_covertype_dataset
+        "covtype": load_covertype_dataset,
+        "sift10m": load_sift10m_dataset,
     }
     for name_like, loader_fn in loader_fn_map.items():
         if name_like in input_path:
