@@ -76,6 +76,7 @@ datasets = dict()
 
 def load_original_data(coreset_file_path: Path):
     dataset, algorithm, k = re.findall(r"/.+/(.+)/(.+)-k(\d+)-", str(coreset_file_path))[0]
+    dataset = dataset.replace("lowd", "")
     loaders = {
         "census": lambda: loader.load_census_dataset("data/input/USCensus1990.data.txt"),
         "tower": lambda: loader.load_tower_dataset("data/input/Tower.txt"),
