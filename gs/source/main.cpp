@@ -194,18 +194,18 @@ int main(int argc, char **argv)
   
   std::cout << "Algorithm completed in " << timeCoresetComputation.elapsedStr() << "\n";
 
-  if (useLowDimDataset)
-  {
-    // We used low-dimensional data to compute the coreset.
-    // Get rid of the low-dimensional data and load the original data.
-    data->resize(0, 0, false);
-    data->shrinkToFit();
+  // if (useLowDimDataset)
+  // {
+  //   // We used low-dimensional data to compute the coreset.
+  //   // Get rid of the low-dimensional data and load the original data.
+  //   data->resize(0, 0, false);
+  //   data->shrinkToFit();
 
-    std::cout << "Parsing original data:\n";
-    utils::StopWatch timeDataParsing(true);
-    data = dataParser->parse(dataFilePath);
-    std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
-  }
+  //   std::cout << "Parsing original data:\n";
+  //   utils::StopWatch timeDataParsing(true);
+  //   data = dataParser->parse(dataFilePath);
+  //   std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
+  // }
 
   outputResultsToFile(data, coreset, outputDir);
   writeDoneFile(outputDir);
