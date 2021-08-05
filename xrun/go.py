@@ -98,14 +98,28 @@ class BenchmarkDataset(Dataset):
         super().__init__(name="hardinstance")
     
     def get_local_file_path(self, k: int) -> Path:
-        return Path(f"data/input/benchmark-k50-alpha4.txt.gz")
+        names = {
+            10: "benchmark-k10-alpha6.txt.gz",
+            20: "benchmark-k20-alpha5.txt.gz",
+            30: "benchmark-k30-alpha4.txt.gz",
+            40: "benchmark-k40-alpha4.txt.gz",
+            50: "benchmark-k50-alpha4.txt.gz",
+        }
+        return Path(f"data/input/{names[k]}")
 
     def get_file_size(self, k: int) -> int:
-        return 118604800
+        sizes = {
+            10: 3357717,
+            20: 13710452,
+            30: 9356322,
+            40: 17663742,
+            50: 44040300,
+        }
+        return sizes[k]
 
     def create_local_file(self, k: int) -> None:
         local_file_path = self.get_local_file_path(k)
-        raise Exception(f"Cannot create {local_file_path} automatically!")
+        raise Exception(f"Cannot create {local_file_path}! Run `python -m xrun.data.gen_benchmark`")
 
 
 @dataclass
