@@ -1,22 +1,20 @@
-import os, requests, subprocess, json, shutil, time
-from typing import List
+import os, subprocess
+
 from timeit import default_timer as timer
+from typing import List, Optional
 
 import numpy as np
 import re
 
-from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 import click
-import gzip
-from tqdm import tqdm
 
 from sklearn.metrics import pairwise_distances
 
-from xrun.gen import KNOWN_ALGORITHMS, generate_random_seed
-from xrun.data import loader
+from xrun.gen import generate_random_seed
+from xrun.data.loader import load_dataset
+from xrun.data.run_info import RunInfo
 
 KMEANS_PATH = "kmeans/bin/kmeans.exe"
 
@@ -72,34 +70,28 @@ def compute_centers(result_file_path: Path) -> Path:
     print(f"k-means++ centers computed in {end_time - start_time:.2f} secs")
     return center_path
 
+
 datasets = dict()
 
-def load_original_data(coreset_file_path: Path):
-    dataset, algorithm, k = re.findall(r"/.+/(.+)/(.+)-k(\d+)-", str(coreset_file_path))[0]
-    dataset = dataset.replace("lowd", "")
-    loaders = {
-        "census": lambda: loader.load_census_dataset("data/input/USCensus1990.data.txt"),
-        "tower": lambda: loader.load_tower_dataset("data/input/Tower.txt"),
-        "covertype": lambda: loader.load_covertype_dataset("data/input/covtype.data.gz"),
-        "enron": lambda: loader.load_bag_of_words_dataset("data/input/docword.enron.txt.gz").todense(),
-    }
+def load_original_data(run_info: RunInfo):
+    dataset_name = run_info.dataset
+    if dataset_name == "hardinstance":
+        dataset_name = f"{dataset_name}-k{run_info.k}"
 
-    if dataset not in loaders:
-        raise Exception(f"Unknown loader for dataset {dataset}.")
+    if dataset_name not in datasets:
+        args = run_info.command.split(" ")
+        dataset_path = args[2] if run_info.algorithm == "bico" else args[3]
+        datasets[dataset_name] = load_dataset(dataset_path)
 
-    if dataset not in datasets:
-        datasets[dataset] = loaders[dataset]()
-
-    return datasets[dataset]
+    return datasets[dataset_name]
 
 
-def compute_real_cost(coreset_file_path: Path, centers_file_path: Path) -> Path:
-    cost_file_path = coreset_file_path.parent / "real_cost.txt"
+def compute_real_cost(experiment_dir: Path, centers_file_path: Path, data_points: np.ndarray) -> Path:
+    cost_file_path = experiment_dir / "real_cost.txt"
     if cost_file_path.exists():
         return cost_file_path
 
     print("Computing real cost... ", end="")
-    data_points = load_original_data(coreset_file_path)
 
     centers = np.loadtxt(fname=centers_file_path, dtype=np.double, delimiter=' ', skiprows=0)
     center_weights = centers[:,0] 
@@ -151,6 +143,14 @@ def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path) -> P
     return cost_file_path
 
 
+def load_run_info(experiment_dir: Path) -> Optional[RunInfo]:
+    run_file_paths = list(experiment_dir.glob("*.json"))
+    if len(run_file_paths) != 1:
+        print(f"Expected a single run file in {experiment_dir} but found {len(run_file_paths)} files.")
+        return None
+    return RunInfo.load_json(run_file_paths[0])
+
+
 def find_unprocesses_result_files(results_dir: str) -> List[Path]:
     search_dir = Path(results_dir)
     output_paths = list(search_dir.glob('**/results.txt.gz'))
@@ -175,14 +175,25 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
 def main(results_dir: str) -> None:
     output_paths = find_unprocesses_result_files(results_dir)
     total_files = len(output_paths)
-    for index, file_path in enumerate(output_paths):
-        print(f"Processing file {index+1} of {total_files}: {file_path}")
-        data_file_path = unzip_file(file_path)
-        centers_file_path = compute_centers(data_file_path)
-        compute_real_cost(data_file_path, centers_file_path)
-        compute_coreset_costs(data_file_path, centers_file_path)
-        print(f"Done processing file {index+1} of {total_files}. Removing {data_file_path}...")
-        os.remove(data_file_path)
+    for index, result_path in enumerate(output_paths):
+        print(f"Processing file {index+1} of {total_files}: {result_path}")
+        experiment_dir = result_path.parent
+
+        run_info = load_run_info(experiment_dir)
+        if run_info is None:
+            print("Cannot process results file because run file is missing.")
+            continue
+
+        unzipped_result_path = unzip_file(result_path)
+        centers_file_path = compute_centers(unzipped_result_path)
+        compute_coreset_costs(unzipped_result_path, centers_file_path)
+        print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
+        os.remove(unzipped_result_path)
+
+        original_data_points = load_original_data(run_info)
+        compute_real_cost(experiment_dir, centers_file_path, original_data_points)
+        print(f"Done processing file {index+1} of {total_files}.")
+        
 
 
 if __name__ == "__main__":
