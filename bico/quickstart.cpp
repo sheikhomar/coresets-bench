@@ -85,7 +85,11 @@ int main(int argc, char **argv)
     else if (datasetName == "tower")
     {
         experiment = std::make_shared<TowerExperiment>();
-    } 
+    }
+    else if (datasetName == "hardinstance")
+    {
+        experiment = std::make_shared<HardInstanceExperiment>();
+    }
     else
     {
         std::cout << "Unknown dataset: " << datasetName << "\n";

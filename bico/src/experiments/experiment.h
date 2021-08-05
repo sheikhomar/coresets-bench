@@ -9,6 +9,9 @@
 #include <time.h>
 #include <chrono>
 #include <iomanip>
+#include <string>
+#include <regex>
+#include <stdexcept>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -16,6 +19,8 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
+#include <boost/spirit/home/x3.hpp>
+#include <boost/spirit/include/support_istream_iterator.hpp>
 
 #include "../point/l2metric.h"
 #include "../point/squaredl2metric.h"
@@ -330,6 +335,59 @@ public:
         {
             std::getline(inData, line);
             result[i] = static_cast<double>(std::stol(line));
+        }
+    }
+};
+
+class HardInstanceExperiment : public Experiment
+{
+    size_t lineNo;
+public:
+    HardInstanceExperiment() : lineNo(0)
+    {
+        
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing a Hard Instance dataset.\n");
+
+        const std::regex rexp("-k(\\d+)-alpha(\\d+)");
+        std::smatch matches;
+        size_t k = 0, alpha = 0;
+
+        if (std::regex_search(InputFilePath, matches, rexp) && matches.size() == 3)
+        {
+            k = std::stol(matches[1].str());
+            alpha = std::stol(matches[2].str());
+
+            this->DimSize = alpha * k;
+            this->DataSize = std::pow(k, alpha);
+            this->LowDimSize = k;
+
+            printf("Extracted\n - k=%ld\n - alpha=%ld\n - N=%ld\n - D=%ld\n"  , k, alpha, DataSize, DimSize);
+        }
+        else
+        {
+            std::cout << "Cannot extract k and alpha from file path: " << InputFilePath << "\n";
+            throw std::invalid_argument("Invalid file path");
+        }
+    }
+
+    void parsePoint(std::vector<double> &result, std::istream &inData)
+    {
+        namespace io = boost::iostreams;
+        namespace x3 = boost::spirit::x3;
+
+        std::string line;
+        std::getline(inData, line);
+        lineNo++;
+
+        if (!x3::phrase_parse(line.begin(), line.end(), (x3::double_ % ','), x3::space, result))
+        {
+            std::stringstream errMsg;
+            errMsg << "Failed to parse line " << lineNo;
+            throw std::logic_error(errMsg.str());
         }
     }
 };

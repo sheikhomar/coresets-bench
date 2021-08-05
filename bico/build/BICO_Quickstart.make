@@ -26,7 +26,7 @@ ifeq ($(config),release)
   DEFINES   += 
   INCLUDES  += -I../CluE/src
   CPPFLAGS  += -MMD -MP $(DEFINES) $(INCLUDES)
-  CFLAGS    += $(CPPFLAGS) $(ARCH) -O3 -std=c++0x
+  CFLAGS    += $(CPPFLAGS) $(ARCH) -O3 -std=c11
   CXXFLAGS  += $(CFLAGS) 
   LDFLAGS   += -s -L../bin
   LIBS      += -lCluE -lboost_iostreams
