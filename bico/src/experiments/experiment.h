@@ -345,7 +345,7 @@ class HardInstanceExperiment : public Experiment
 public:
     HardInstanceExperiment() : lineNo(0)
     {
-        
+        this->LowDimSize = 50L;
     }
 
     void prepareFileStream(std::istream &inData)
@@ -363,7 +363,6 @@ public:
 
             this->DimSize = alpha * k;
             this->DataSize = std::pow(k, alpha);
-            this->LowDimSize = k;
 
             printf("Extracted\n - k=%ld\n - alpha=%ld\n - N=%ld\n - D=%ld\n"  , k, alpha, DataSize, DimSize);
         }
