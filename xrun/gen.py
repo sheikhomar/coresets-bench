@@ -23,7 +23,8 @@ KNOWN_DATASETS = [
     "census",
     "censuslowd",
     "tower",
-    "enron"
+    "enron",
+    "hardinstance",
 ]
 
 MT_PATH = "mt/bin/mt.exe"
@@ -131,6 +132,7 @@ def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datase
         "covertypelowd": [10, 20, 30, 40, 50],
         "enron": [10, 20, 30, 40, 50],
         "tower": [20, 40, 60, 80, 100],
+        "hardinstance": [10, 20, 30, 40, 50],
     }
 
     ready_dir = Path("data/queue/ready")
