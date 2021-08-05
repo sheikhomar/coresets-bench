@@ -383,11 +383,15 @@ public:
         std::getline(inData, line);
         lineNo++;
 
+        if (line.size() == 0)
+        {
+            std::cout << "Skipping line " << lineNo << " because it is empty.\n";
+            return;
+        }
+
         if (!x3::phrase_parse(line.begin(), line.end(), (x3::double_ % ','), x3::space, result))
         {
-            std::stringstream errMsg;
-            errMsg << "Failed to parse line " << lineNo;
-            throw std::logic_error(errMsg.str());
+            std::cout << "Failed to parse line " << lineNo << ": \n <" << line << ">\n";
         }
     }
 };
