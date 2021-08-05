@@ -3,49 +3,55 @@ from typing import List
 
 import click
 import numpy as np
+import pandas as pd
 
-from sklearn.decomposition import TruncatedSVD
+from scipy import linalg
 
 from xrun.data.loader import load_dataset
 
 
-def perform_projection(X, target_dim: int, input_path: str):
-    svd = TruncatedSVD(
-        n_components=int(target_dim),
-        algorithm="arpack",
-    )
-
-    print(f"Computing SVD with target dimensions {target_dim} using ARPACK...")
+def perform_projection(X, target_dim: int):
+    print(f"Computing SVD with target dimensions {target_dim}...")
     start_time = timer()
-    X_reduced = svd.fit_transform(X)
-    end_time = timer()
-    print(f"Elapsed time: {end_time - start_time:.2f} secs")
-    print(f"Explained variance ratios: {np.sum(svd.explained_variance_ratio_):0.4}")
 
-    print(f"Saving transformed data to disk...")
-    np.savetxt(
-        fname=f"{input_path}-svd-d{target_dim}.txt.gz",
-        X=X_reduced,
-        delimiter=",",
+    # U: Unitary matrix having left singular vectors as columns. 
+    # s: The singular values, sorted in descending order.
+    # V: Unitary matrix having right singular vectors as rows.
+    U, s, V = linalg.svd(
+        a=X,
+        full_matrices=False,
+        overwrite_a=True,
+        lapack_driver='gesdd'
     )
-    np.savez_compressed(
-        file=f"{input_path}-svd-d{target_dim}.npz",
-        X=X_reduced,
-    )
-    print(f"Saving components to disk...")
-    np.savez_compressed(
-        file=f"{input_path}-svd-d{target_dim}-output.npz",
-        components=svd.components_,
-        explained_variance=svd.explained_variance_,
-        explained_variance_ratio=svd.explained_variance_ratio_,
-        singular_values=svd.singular_values_,
-    )
+
+    # Only take the k singular vectors corresponding to the largest singular values
+    # Zero out the rest of singular vectors in V. 
+    V[target_dim:] = 0
+
+    # X_transformed = X*V*V^T
+    X_transformed = np.matmul(X, np.matmul(V, V.T))
+
+    end_time = timer()
+    print(f" - Completed {end_time - start_time:.2f} secs")
+
+    return X_transformed
+
+
+def persist_to_disk(data: np.ndarray, output_path: str) -> None:
+    print(f"Storing data to {output_path}...")
+    start_time = timer()
+    df_data = pd.DataFrame(data)
+    df_data.to_csv(output_path, index=False, header=False)
+    end_time = timer()
+    print(f" - Completed in : {end_time - start_time:.2f} secs")
 
 
 def reduce_dim(input_path: str, target_dims: List[int]) -> None:
     X = load_dataset(input_path)
     for target_dim in target_dims:
-        perform_projection(X, target_dim, input_path)
+        X_transformed = perform_projection(X, target_dim)
+        output_path = f"{input_path}-svd-d{target_dim}.txt.gz"
+        persist_to_disk(X_transformed, output_path)
 
 
 def validate_target_dims(ctx, param, value):
