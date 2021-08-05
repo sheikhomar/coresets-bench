@@ -126,7 +126,7 @@ class BenchmarkDataset(Dataset):
 @dataclass
 class RunInfo:
     algorithm: str
-    dataset_name: str
+    dataset: str
     k: int
     m: int
     iteration: int
@@ -144,7 +144,7 @@ class RunInfo:
             content = json.load(f)
             obj = cls(
                 algorithm=content["algorithm"],
-                dataset_name=content["dataset"],
+                dataset=content["dataset"],
                 k=content["k"],
                 m=content["m"],
                 iteration=content.get("iteration", -1),
@@ -318,8 +318,8 @@ class ExperimentRunner:
         run_details.save_json(run_file_path)
 
     def _build_command(self, run: RunInfo, experiment_dir: Path) -> List[str]:
-        low_d_dataset = "lowd" in run.dataset_name
-        dataset_name = run.dataset_name
+        low_d_dataset = "lowd" in run.dataset
+        dataset_name = run.dataset
 
         if low_d_dataset:
             dataset_name = dataset_name.replace("lowd", "")
@@ -360,7 +360,7 @@ class ExperimentRunner:
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
         experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        experiment_dir = os.path.join(self._dir_output, f"{run.dataset_name}/{run.algorithm}-k{run.k}-m{run.m}/{experiment_no}")
+        experiment_dir = os.path.join(self._dir_output, f"{run.dataset}/{run.algorithm}-k{run.k}-m{run.m}/{experiment_no}")
         os.makedirs(experiment_dir)
         return Path(experiment_dir)
 
