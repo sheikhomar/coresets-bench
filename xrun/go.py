@@ -1,16 +1,16 @@
-import dataclasses
 import os, requests, subprocess, json, shutil, time
-from typing import Dict, List, Optional
-from timeit import default_timer as timer
 
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from timeit import default_timer as timer
+from typing import Dict, List, Optional
 
 import click
 import psutil
 
 from tqdm import tqdm
+
+from xrun.data.run_info import RunInfo
 
 class Dataset:
     _name: str
@@ -122,49 +122,6 @@ class BenchmarkDataset(Dataset):
         local_file_path = self.get_local_file_path(k)
         raise Exception(f"Cannot create {local_file_path}! Run `python -m xrun.data.gen_benchmark`")
 
-
-@dataclass
-class RunInfo:
-    algorithm: str
-    dataset: str
-    k: int
-    m: int
-    iteration: int
-    randomSeed: int
-    output_dir: str
-    command: str
-    start_time: str
-    end_time: str
-    duration_secs: float
-    process_id: int
-
-    @classmethod
-    def load_json(cls, file_path: Path):
-        with open(file_path, "r") as f:
-            content = json.load(f)
-            obj = cls(
-                algorithm=content["algorithm"],
-                dataset=content["dataset"],
-                k=content["k"],
-                m=content["m"],
-                iteration=content.get("iteration", -1),
-                randomSeed=content["randomSeed"],
-                output_dir=content.get("output_dir", ""),
-                command=content.get("command", ""),
-                start_time=content.get("start_time", ""),
-                end_time=content.get("end_time", ""),
-                duration_secs=content.get("duration_secs", 0),
-                process_id=content.get("process_id", -1),
-            )
-            return obj
-
-    def save_json(self, file_path: Path):
-        with open(file_path, "w") as f:
-            json.dump(dataclasses.asdict(self), f, indent=4, sort_keys=False)
-
-    @property
-    def started_at(self) -> datetime:
-        return datetime.fromisoformat(self.start_time)
 
 class ExperimentRunner:
     _datasets : Dict[str, Dataset] = {
