@@ -21,9 +21,9 @@ using namespace data;
 
 void svd() 
 {
-  auto parser = BagOfWordsParser();
+  auto parser = CovertypeParser();
   utils::StopWatch timeDataParsing(true);
-  auto data = parser.parse("/home/omar/code/coresets-bench/data/input/docword.enron.txt.gz");
+  auto data = parser.parse("data/input/covtype.data.gz");
 
   std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
 
@@ -34,9 +34,18 @@ void svd()
   blaze::DynamicVector<double, blaze::columnVector> s;  // The vector for the singular values
   blaze::DynamicMatrix<double, blaze::rowMajor>     V;  // The matrix for the right singular vectors
 
-  blaze::svd(*data, U, s, V );  // (3) Computing the singular values and vectors of A
+  blaze::svd(*data, U, s, V);  // (3) Computing the singular values and vectors of A
+
+  // Take the k singular vectors corresponding to the largest singular values
+  // Zero out the rest of singular vectors on V
+  // X_transformed = X*V*V^T
 
   std::cout << "SVD completed in "<< svdTime.elapsedStr() << ".\n";
+  std::cout << " - Number of singular values: " << s.size() << "\n";
+  std::cout << " - Shape of V: " << V.rows() << " x " << V.columns() << "\n";
+  std::cout << "Singular values: \n" << s << "\n";
+
+  std::cout << "V_1 :\n" << blaze::row(V, 0) << "\n";
 
   std::cout << "Storing SVD components..\n";
   blaze::Archive<std::ofstream> archive("/home/omar/code/coresets-bench/data/input/docword.enron.svd.blaze");
