@@ -12,27 +12,106 @@ import psutil
 
 from tqdm import tqdm
 
-@dataclass
 class Dataset:
-    name: str
-    download_url: Optional[str]
-    file_size: int
+    _name: str
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def get_local_file_path(self, k: int) -> Path:
+        raise Exception("Not implemented")
+
+    def get_file_size(self, k: int) -> int:
+        raise Exception("Not implemented")
+
+    def create_local_file(self, k: int) -> None:
+        raise Exception("Not implemented")
+
+    def ensure_exists(self, k: int):
+        local_file_path = self.get_local_file_path(k)
+
+        if not local_file_path.parent.exists():
+            os.makedirs(str(local_file_path.parent))
+
+        if local_file_path.exists():
+            actual_file_size = local_file_path.stat().st_size
+            expected_file_size = self.get_file_size(k)
+            if actual_file_size < expected_file_size:
+                print(f"The size of file {local_file_path.name} is {actual_file_size} but expected {expected_file_size}. Removing file...")
+                os.remove(local_file_path)
+        
+        if not local_file_path.exists():
+            self.create_local_file(k)
+
+
+class ExternalDataset(Dataset):
+    def __init__(self, name: str, download_url: str, file_size: int) -> None:
+        super().__init__(name)
+        self._download_url = download_url
+        self._file_size = file_size
+        self._local_file_name = os.path.basename(download_url)
+
+    @property
+    def download_url(self) -> str:
+        return self._download_url
 
     @property
     def local_file_name(self) -> str:
-        if self.download_url is None:
-            return ""
-        return os.path.basename(self.download_url)
+        return self._local_file_name
 
     @property
     def local_file_path(self) -> Path:
-        return Path(f"data/input/{self.local_file_name}")
+        return self.get_local_file_path(0)
+
+    def get_local_file_path(self, k: int) -> Path:
+        return Path(f"data/input/{self._local_file_name}")
+
+    def get_file_size(self, k: int) -> int:
+        raise self._file_size
+
+    def create_local_file(self, k: int) -> None:
+        local_file_path = self.get_local_file_path(k)
+        self._download_file(url=self._download_url, file_path=local_file_path)
+
+    def _download_file(self, url: str, file_path: Path):
+        """
+        Downloads file from `url` to `file_path`.
+        """
+        print(f"Downloading {url} to {file_path}...")
+        chunk_size = 1024
+        r = requests.get(url, stream=True)
+        with open(file_path, 'wb') as f:
+            total_size = int(r.headers.get('Content-Length', 10 * chunk_size))
+            pbar = tqdm( unit="B", unit_scale=True, total=total_size)
+            for chunk in r.iter_content(chunk_size=chunk_size): 
+                if chunk: # filter out keep-alive new chunks
+                    pbar.update (len(chunk))
+                    f.write(chunk)
+
+
+class BenchmarkDataset(Dataset):
+    def __init__(self) -> None:
+        super().__init__(name="hardinstance")
+    
+    def get_local_file_path(self, k: int) -> Path:
+        return Path(f"data/input/benchmark-k50-alpha4.txt.gz")
+
+    def get_file_size(self, k: int) -> int:
+        return 118604800
+
+    def create_local_file(self, k: int) -> None:
+        local_file_path = self.get_local_file_path(k)
+        raise Exception(f"Cannot create {local_file_path} automatically!")
 
 
 @dataclass
 class RunInfo:
     algorithm: str
-    dataset: str
+    dataset_name: str
     k: int
     m: int
     iteration: int
@@ -50,7 +129,7 @@ class RunInfo:
             content = json.load(f)
             obj = cls(
                 algorithm=content["algorithm"],
-                dataset=content["dataset"],
+                dataset_name=content["dataset"],
                 k=content["k"],
                 m=content["m"],
                 iteration=content.get("iteration", -1),
@@ -73,28 +152,28 @@ class RunInfo:
         return datetime.fromisoformat(self.start_time)
 
 class ExperimentRunner:
-    _datasets = {
-        "census": Dataset(
+    _datasets : Dict[str, Dataset] = {
+        "census": ExternalDataset(
                     name="census",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt",
                     file_size=361344227
                 ),
-        "censuslowd": Dataset(
-                    name="censuslowd",
-                    download_url=None,
-                    file_size=0
-                ),
-        "covertype": Dataset(
+        # "censuslowd": Dataset(
+        #             name="censuslowd",
+        #             download_url=None,
+        #             file_size=0
+        #         ),
+        "covertype": ExternalDataset(
                     name="covertype",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz",
                     file_size=11240707
                 ),
-        "covertypelowd": Dataset(
-                    name="covertypelowd",
-                    download_url=None,
-                    file_size=0
-                ),
-        "enron": Dataset(
+        # "covertypelowd": Dataset(
+        #             name="covertypelowd",
+        #             download_url=None,
+        #             file_size=0
+        #         ),
+        "enron": ExternalDataset(
                     name="enron",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.enron.txt.gz",
                     file_size=12313965
@@ -109,11 +188,12 @@ class ExperimentRunner:
         #             download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
         #             file_size=234225967
         #         ),
-        "tower": Dataset(
+        "tower": ExternalDataset(
                     name="tower",
                     download_url="http://homepages.uni-paderborn.de/frahling/instances/Tower.txt",
                     file_size=52828754
-                )
+                ),
+        "hardinstance": BenchmarkDataset(),
     }
     _dir_ready = "data/queue/ready"
     _dir_in_progress = "data/queue/in-progress"
@@ -130,8 +210,6 @@ class ExperimentRunner:
                 os.makedirs(directory)
 
     def run(self, max_active: int) -> None:
-        self._download_datasets()
-
         while True:
             self._clean_in_progress()
 
@@ -225,13 +303,14 @@ class ExperimentRunner:
         run_details.save_json(run_file_path)
 
     def _build_command(self, run: RunInfo, experiment_dir: Path) -> List[str]:
-        low_d_dataset = "lowd" in run.dataset
-        dataset_name = run.dataset
+        low_d_dataset = "lowd" in run.dataset_name
+        dataset_name = run.dataset_name
 
         if low_d_dataset:
-            dataset_name = run.dataset.replace("lowd", "")
-
-        data_file_path = self._datasets[dataset_name].local_file_path
+            dataset_name = dataset_name.replace("lowd", "")
+        dataset = self._datasets[dataset_name]
+        dataset.ensure_exists(run.k)
+        data_file_path = dataset.get_local_file_path(run.k)
 
         if run.algorithm == "bico":
             algorithm_exe_path = "bico/bin/BICO_Quickstart.exe"
@@ -266,7 +345,7 @@ class ExperimentRunner:
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
         experiment_no = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        experiment_dir = os.path.join(self._dir_output, f"{run.dataset}/{run.algorithm}-k{run.k}-m{run.m}/{experiment_no}")
+        experiment_dir = os.path.join(self._dir_output, f"{run.dataset_name}/{run.algorithm}-k{run.k}-m{run.m}/{experiment_no}")
         os.makedirs(experiment_dir)
         return Path(experiment_dir)
 
@@ -305,45 +384,6 @@ class ExperimentRunner:
             for file_name in os.listdir(dir_name_str)
             if file_name.endswith(".json")
         ]
-
-    def _download_datasets(self) -> None:
-        for _, dataset in self._datasets.items():
-            self._ensure_dataset_exists(dataset)
-
-    def _ensure_dataset_exists(self, dataset: Dataset):
-        if dataset.download_url is None:
-            return
-
-        local_file_path = dataset.local_file_path
-
-        if not local_file_path.parent.exists():
-            os.makedirs(str(local_file_path.parent))
-
-        if local_file_path.exists():
-            actual_file_size = local_file_path.stat().st_size
-            expected_file_size = dataset.file_size
-            if actual_file_size < expected_file_size:
-                print(f"The size of file {local_file_path.name} is {actual_file_size} but expected {expected_file_size}. Removing file...")
-                os.remove(local_file_path)
-        
-        if not local_file_path.exists():
-            self._download_file(dataset.download_url, local_file_path)
-
-    def _download_file(self, url: str, file_path: Path):
-        """
-        Downloads file from `url` to `file_path`.
-        """
-        print(f"Downloading {url} to {file_path}...")
-        chunk_size = 1024
-        r = requests.get(url, stream=True)
-        with open(file_path, 'wb') as f:
-            total_size = int(r.headers.get('Content-Length', 10 * chunk_size))
-            pbar = tqdm( unit="B", unit_scale=True, total=total_size)
-            for chunk in r.iter_content(chunk_size=chunk_size): 
-                if chunk: # filter out keep-alive new chunks
-                    pbar.update (len(chunk))
-                    f.write(chunk)
-
 
 @click.command(help="Run experiments.")
 @click.option(
