@@ -3,7 +3,7 @@ from timeit import default_timer as timer
 
 import click
 import numpy as np
-
+import pandas as pd
 
 def generate_benchmark(k: int, alpha: int):
     """Generate benchmark dataset.
@@ -60,11 +60,9 @@ def gen_benchmark(block_size: int, alpha: int, output_dir: str):
 
     print("Storing data on disk...")
     start_time = timer()
-    np.savetxt(
-        fname=os.path.join(output_dir, f"benchmark-k{block_size}-alpha{alpha}.txt.gz"),
-        X=dataset,
-        delimiter=",",
-    )
+    df_data = pd.DataFrame(dataset)
+    output_path = os.path.join(output_dir, f"benchmark-k{block_size}-alpha{alpha}.txt.gz")
+    df_data.to_csv(output_path, index=False, header=False)
     end_time = timer()
     print(f"Elapsed time: {end_time - start_time:.2f} secs")
 
