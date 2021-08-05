@@ -147,7 +147,11 @@ int main(int argc, char **argv)
   else if (datasetName == "tower")
   {
     dataParser = std::make_shared<TowerParser>();
-  } 
+  }
+  else if (datasetName == "hardinstance")
+  {
+    dataParser = std::make_shared<CsvParser>();
+  }
   else
   {
     std::cout << "Unknown dataset: " << datasetName << "\n";
