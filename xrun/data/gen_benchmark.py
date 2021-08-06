@@ -5,7 +5,7 @@ import click
 import numpy as np
 import pandas as pd
 
-def generate_benchmark(k: int, alpha: int):
+def generate_benchmark(k: int, alpha: int, beta: int):
     """Generate benchmark dataset.
 
     Parameters
@@ -45,15 +45,25 @@ def generate_benchmark(k: int, alpha: int):
             copy_i = i // k
             copy_j = j + k
             data[i,j] = data[copy_i, copy_j]
+
+    # Scale column blocks
+    if beta > 1:
+        for i in range(alpha):
+            start_col = i*k
+            end_col = i*k + k
+            beta_val = beta ** (-i)
+            data[:, start_col:end_col] *= beta_val
+
     return data
 
 
-def gen_benchmark(block_size: int, alpha: int, output_dir: str):
+def gen_benchmark(block_size: int, alpha: int, beta: int, output_dir: str):
     print("Generating benchmark dataset...")
     start_time = timer()
     dataset = generate_benchmark(
         k=block_size,
         alpha=alpha,
+        beta=beta,
     )
     end_time = timer()
     print(f"Dataset of shape {dataset.shape} generated in {end_time - start_time:.2f} secs")
@@ -61,7 +71,7 @@ def gen_benchmark(block_size: int, alpha: int, output_dir: str):
     print("Storing data on disk...")
     start_time = timer()
     df_data = pd.DataFrame(dataset)
-    output_path = os.path.join(output_dir, f"benchmark-k{block_size}-alpha{alpha}.txt.gz")
+    output_path = os.path.join(output_dir, f"benchmark-k{block_size}-alpha{alpha}-beta{beta:0.2f}.txt.gz")
     df_data.to_csv(output_path, index=False, header=False)
     end_time = timer()
     print(f"Elapsed time: {end_time - start_time:.2f} secs")
@@ -81,6 +91,12 @@ def gen_benchmark(block_size: int, alpha: int, output_dir: str):
     required=True,
 )
 @click.option(
+    "-b",
+    "--beta",
+    type=click.INT,
+    required=True,
+)
+@click.option(
     "-o",
     "--output-dir",
     type=click.STRING,
@@ -90,6 +106,7 @@ def main(block_size: int, alpha: int, output_dir: str):
     gen_benchmark(
         block_size=block_size,
         alpha=alpha,
+        beta=beta,
         output_dir=output_dir
     )
 
