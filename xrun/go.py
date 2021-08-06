@@ -123,6 +123,40 @@ class BenchmarkDataset(Dataset):
         raise Exception(f"Cannot create {local_file_path}! Run `python -m xrun.data.gen_benchmark`")
 
 
+class LowDimensionalDataset(Dataset):
+    def __init__(self, original_dataset: ExternalDataset) -> None:
+        super().__init__(original_dataset.name)
+        self._original_dataset = original_dataset
+
+    def get_local_file_path(self, k: int) -> Path:
+        file_path = self._original_dataset.get_local_file_path(k)
+        return Path(f"{file_path}-svd-d{k}.txt.gz")
+    
+    def get_file_size(self, k: int) -> int:
+        sizes_dict = {
+            "census": {
+                10: 1529828319,
+                20: 1533766277,
+                30: 1532138499,
+                40: 1527974659,
+                50: 1523368090,
+            },
+            "covertype": {
+                10: 290859471,
+                20: 289207596,
+                30: 286757020,
+                40: 286788280,
+                50: 286788280,
+            },
+        }
+        return sizes_dict[self._original_dataset.name][k]
+
+    def create_local_file(self, k: int) -> None:
+        local_file_path = self.get_local_file_path(k)
+        original_file_path = self._original_dataset.get_local_file_path(k)
+        raise Exception(f"Cannot create {local_file_path}! Run `python -m xrun.data.tsvd -i {original_file_path} -d {k}`")
+
+
 class ExperimentRunner:
     _datasets : Dict[str, Dataset] = {
         "census": ExternalDataset(
@@ -130,21 +164,11 @@ class ExperimentRunner:
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990.data.txt",
                     file_size=361344227
                 ),
-        # "censuslowd": Dataset(
-        #             name="censuslowd",
-        #             download_url=None,
-        #             file_size=0
-        #         ),
         "covertype": ExternalDataset(
                     name="covertype",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/covtype.data.gz",
                     file_size=11240707
                 ),
-        # "covertypelowd": Dataset(
-        #             name="covertypelowd",
-        #             download_url=None,
-        #             file_size=0
-        #         ),
         "enron": ExternalDataset(
                     name="enron",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.enron.txt.gz",
@@ -167,6 +191,8 @@ class ExperimentRunner:
                 ),
         "hardinstance": BenchmarkDataset(),
     }
+    _datasets["censuslowd"] = LowDimensionalDataset(_datasets["census"])
+    _datasets["covertypelowd"] = LowDimensionalDataset(_datasets["covertype"])
     _dir_ready = "data/queue/ready"
     _dir_in_progress = "data/queue/in-progress"
     _dir_completed = "data/queue/completed"
@@ -275,11 +301,7 @@ class ExperimentRunner:
         run_details.save_json(run_file_path)
 
     def _build_command(self, run: RunInfo, experiment_dir: Path) -> List[str]:
-        low_d_dataset = "lowd" in run.dataset
         dataset_name = run.dataset
-
-        if low_d_dataset:
-            dataset_name = dataset_name.replace("lowd", "")
         dataset = self._datasets[dataset_name]
         dataset.ensure_exists(run.k)
         data_file_path = dataset.get_local_file_path(run.k)
@@ -308,11 +330,6 @@ class ExperimentRunner:
                 str(run.randomSeed), # Random Seed
                 str(experiment_dir), # Output dir
             ]
-            if low_d_dataset:
-                low_d_dataset_path = f"{data_file_path}-pca-d{run.k}.txt.gz"
-                if not os.path.exists(low_d_dataset_path):
-                    raise Exception(f"Low dimensional dataset does not exist: {low_d_dataset_path}...")
-                cmd.append(low_d_dataset_path)
             return cmd
 
     def _get_experiment_dir(self, run: RunInfo) -> Path:
