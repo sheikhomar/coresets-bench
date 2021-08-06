@@ -25,11 +25,11 @@ def perform_projection(X, target_dim: int):
     )
 
     # Only take the k singular vectors corresponding to the largest singular values
-    # Zero out the rest of singular vectors in V. 
-    V[target_dim:] = 0
+    # by zeroing out the rest of singular values in `s`.
+    s[target_dim:] = 0
 
-    # X_transformed = X*V*V^T
-    X_transformed = np.matmul(X, np.matmul(V, V.T))
+    # X_transformed = U*diag(s)*V
+    X_transformed = np.dot(U, np.dot(np.diag(s), V))
 
     end_time = timer()
     print(f" - Completed {end_time - start_time:.2f} secs")
