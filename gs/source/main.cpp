@@ -148,7 +148,10 @@ int main(int argc, char **argv)
   {
     dataParser = std::make_shared<TowerParser>();
   }
-  else if (datasetName == "hardinstance")
+  else if (
+    datasetName.find("hardinstance") != std::string::npos ||
+    datasetName.find("lowd") != std::string::npos
+  )
   {
     dataParser = std::make_shared<CsvParser>();
   }
