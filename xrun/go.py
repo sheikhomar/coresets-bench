@@ -42,8 +42,6 @@ class Dataset:
             expected_file_size = self.get_file_size(k)
             if actual_file_size < expected_file_size:
                 print(f"The size of file {local_file_path.name} is {actual_file_size} but expected {expected_file_size}.")
-                # os.remove(local_file_path)
-                # self.create_local_file(k)
         
         if not local_file_path.exists():
             self.create_local_file(k)
