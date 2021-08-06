@@ -339,38 +339,13 @@ public:
     }
 };
 
-class HardInstanceExperiment : public Experiment
+class CsvDatasetExperiment : public Experiment
 {
     size_t lineNo;
 public:
-    HardInstanceExperiment() : lineNo(0)
+    CsvDatasetExperiment() : lineNo(0)
     {
         this->LowDimSize = 50L;
-    }
-
-    void prepareFileStream(std::istream &inData)
-    {
-        printf("Preparing a Hard Instance dataset.\n");
-
-        const std::regex rexp("-k(\\d+)-alpha(\\d+)");
-        std::smatch matches;
-        size_t k = 0, alpha = 0;
-
-        if (std::regex_search(InputFilePath, matches, rexp) && matches.size() == 3)
-        {
-            k = std::stol(matches[1].str());
-            alpha = std::stol(matches[2].str());
-
-            this->DimSize = alpha * k;
-            this->DataSize = std::pow(k, alpha);
-
-            printf("Extracted\n - k=%ld\n - alpha=%ld\n - N=%ld\n - D=%ld\n"  , k, alpha, DataSize, DimSize);
-        }
-        else
-        {
-            std::cout << "Cannot extract k and alpha from file path: " << InputFilePath << "\n";
-            throw std::invalid_argument("Invalid file path");
-        }
     }
 
     void parsePoint(std::vector<double> &result, std::istream &inData)
@@ -395,5 +370,65 @@ public:
     }
 };
 
+class HardInstanceExperiment : public CsvDatasetExperiment
+{
+public:
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing a Hard Instance dataset.\n");
+
+        const std::regex rexp("-k(\\d+)-alpha(\\d+)");
+        std::smatch matches;
+        size_t k = 0, alpha = 0;
+
+        if (std::regex_search(InputFilePath, matches, rexp) && matches.size() == 3)
+        {
+            k = std::stol(matches[1].str());
+            alpha = std::stol(matches[2].str());
+
+            this->DimSize = alpha * k;
+            this->DataSize = std::pow(k, alpha);
+
+            printf("Extracted\n - k=%ld\n - alpha=%ld\n - N=%ld\n - D=%ld\n"  , k, alpha, DataSize, DimSize);
+        }
+        else
+        {
+            std::cout << "Cannot extract k and alpha from file path: " << InputFilePath << "\n";
+            throw std::invalid_argument("Invalid file path");
+        }
+    }
+};
+
+class CovertypeLowDExperiment : public CsvDatasetExperiment
+{
+public:
+    CovertypeLowDExperiment()
+    {
+        this->DimSize = 54UL;
+        this->DataSize = 581012UL;
+        this->LowDimSize = 50UL;
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing Low-D Covertype .\n");
+    }
+};
+
+class CensusLowDExperiment : public CsvDatasetExperiment
+{
+public:
+    CensusLowDExperiment()
+    {
+        this->DimSize = 68UL;
+        this->DataSize = 2458285UL;
+        this->LowDimSize = 50UL;
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing Low-D Census .\n");
+    }
+};
 
 #endif
