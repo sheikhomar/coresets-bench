@@ -72,7 +72,7 @@ class ExternalDataset(Dataset):
         return Path(f"data/input/{self._local_file_name}")
 
     def get_file_size(self, k: int) -> int:
-        raise self._file_size
+        return self._file_size
 
     def create_local_file(self, k: int) -> None:
         local_file_path = self.get_local_file_path(k)
