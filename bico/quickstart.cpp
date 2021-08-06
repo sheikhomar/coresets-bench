@@ -86,9 +86,17 @@ int main(int argc, char **argv)
     {
         experiment = std::make_shared<TowerExperiment>();
     }
-    else if (datasetName == "hardinstance")
+    else if (datasetName.find("hardinstance") != std::string::npos)
     {
         experiment = std::make_shared<HardInstanceExperiment>();
+    }
+    else if (datasetName == "censuslowd")
+    {
+        experiment = std::make_shared<CensusLowDExperiment>();
+    }
+    else if (datasetName == "covertypelowd")
+    {
+        experiment = std::make_shared<CovertypeLowDExperiment>();
     }
     else
     {
