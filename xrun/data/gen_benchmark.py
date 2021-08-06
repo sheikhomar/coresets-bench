@@ -102,7 +102,7 @@ def gen_benchmark(block_size: int, alpha: int, beta: int, output_dir: str):
     type=click.STRING,
     required=True,
 )
-def main(block_size: int, alpha: int, output_dir: str):
+def main(block_size: int, alpha: int, beta: int, output_dir: str):
     gen_benchmark(
         block_size=block_size,
         alpha=alpha,
