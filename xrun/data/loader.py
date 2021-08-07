@@ -112,7 +112,7 @@ def load_sift10m_dataset(input_path: str):
     return data
 
 
-def load_benchmark_dataset(input_path: str):
+def load_csv_dataset(input_path: str):
     dimensions = 0 # The `nonlocal dimensions` below in iter_func() binds to this variable.
     def iter_func():
         nonlocal dimensions
@@ -124,7 +124,7 @@ def load_benchmark_dataset(input_path: str):
                         yield float(item)
             dimensions = len(line)
 
-    print(f"Loading benchmark dataset from {input_path}...")
+    print(f"Loading csv dataset from {input_path}...")
     start_time = timer()
 
     data = np.fromiter(iter_func(), dtype=np.double)
@@ -136,12 +136,13 @@ def load_benchmark_dataset(input_path: str):
 
 def load_dataset(input_path: str) -> object:
     loader_fn_map : Dict[str, Callable[[str], object]] = {
+        "svd": load_csv_dataset,
+        "benchmark": load_csv_dataset,
         "docword": load_bag_of_words_dataset,
         "Tower": load_tower_dataset,
         "USCensus1990": load_census_dataset,
         "covtype": load_covertype_dataset,
         "sift10m": load_sift10m_dataset,
-        "benchmark": load_benchmark_dataset,
     }
     for name_like, loader_fn in loader_fn_map.items():
         if name_like in input_path:

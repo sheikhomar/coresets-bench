@@ -75,7 +75,7 @@ datasets = dict()
 
 def load_original_data(run_info: RunInfo):
     dataset_name = run_info.dataset
-    if dataset_name == "hardinstance":
+    if "hardinstance" in dataset_name or "lowd" in dataset_name:
         dataset_name = f"{dataset_name}-k{run_info.k}"
 
     if dataset_name not in datasets:
