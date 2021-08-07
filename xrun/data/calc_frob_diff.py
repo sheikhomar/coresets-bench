@@ -1,4 +1,4 @@
-import re
+import re, os
 
 from pathlib import Path
 from pprint import pprint
@@ -32,6 +32,11 @@ def get_original_reduced_mappings(data_dir: Path) -> Dict[str, List[Path]]:
     reduced_data_paths = list(data_dir.glob("*-svd-d*"))
     original_reduced_map: Dict[str, List[Path]] = dict()
     for reduced_file_path in reduced_data_paths:
+        if not re.search(r"-svd-d\d+\.txt\.gz$", str(reduced_file_path)):
+            continue
+        if os.path.exists(f"{reduced_file_path}-sqrfrob.txt"):
+            print(f"Already calculated for {reduced_file_path}. Skipping ...")
+            continue
         original_file_path = re.sub(r"-svd-d\d+\.txt\.gz", "", str(reduced_file_path))
         if original_file_path not in original_reduced_map:
             original_reduced_map[original_file_path] = []
