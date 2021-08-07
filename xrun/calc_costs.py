@@ -75,12 +75,22 @@ datasets = dict()
 
 def load_original_data(run_info: RunInfo):
     dataset_name = run_info.dataset
-    if "hardinstance" in dataset_name or "lowd" in dataset_name:
+
+    if "hardinstance" in dataset_name:
         dataset_name = f"{dataset_name}-k{run_info.k}"
+    elif run_info.is_low_dimensional_dataset:
+        dataset_name = run_info.original_dataset_name
 
     if dataset_name not in datasets:
-        args = run_info.command.split(" ")
-        dataset_path = args[2] if run_info.algorithm == "bico" else args[3]
+        if run_info.is_low_dimensional_dataset:
+            dataset_paths = {
+                "census": "data/input/USCensus1990.data.txt",
+                "covertype": "data/input/covtype.data.gz",
+                "enron": "data/input/docword.enron.txt.gz",
+            }
+            dataset_path = dataset_paths[dataset_name]
+        else:
+            dataset_path = run_info.dataset_path
         datasets[dataset_name] = load_dataset(dataset_path)
 
     return datasets[dataset_name]
@@ -113,7 +123,7 @@ def compute_real_cost(experiment_dir: Path, centers_file_path: Path, data_points
     return cost_file_path
 
 
-def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path) -> Path:
+def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path, added_cost: float) -> Path:
     cost_file_path = coreset_file_path.parent / "coreset_cost.txt"
     if cost_file_path.exists():
         return cost_file_path
@@ -137,6 +147,10 @@ def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path) -> P
     weighted_cost = np.sum(coreset_weights * dist_closest_centers)
 
     print(f"Computed coreset cost: {weighted_cost}")
+
+    if added_cost > 0:
+        weighted_cost += added_cost
+        print(f" Adding additional cost: {added_cost}")
     
     with open(cost_file_path, "w") as f:
         f.write(str(weighted_cost))
@@ -165,6 +179,16 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
     return return_paths
 
 
+def get_added_cost_for_low_dimensional_dataset(run_info: RunInfo) -> float:
+    if run_info.is_low_dimensional_dataset:
+        sqrfrob_file_path = f"{run_info.dataset_path}-sqrfrob.txt"
+        if not os.path.exists(sqrfrob_file_path):
+            raise Exception(f"File not found: {sqrfrob_file_path} Run `python -m xrun.data.calc_frob_diff -d data/input` to generate extra costs.")
+        with open(sqrfrob_file_path, "r") as fp:
+            return float(fp.read())
+    return 0.0
+
+
 @click.command(help="Compute costs for coresets.")
 @click.option(
     "-r",
@@ -184,9 +208,11 @@ def main(results_dir: str) -> None:
             print("Cannot process results file because run file is missing.")
             continue
 
+        added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
+
         unzipped_result_path = unzip_file(result_path)
         centers_file_path = compute_centers(unzipped_result_path)
-        compute_coreset_costs(unzipped_result_path, centers_file_path)
+        compute_coreset_costs(unzipped_result_path, centers_file_path, added_cost)
         print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
         os.remove(unzipped_result_path)
 

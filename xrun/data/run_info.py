@@ -49,7 +49,16 @@ class RunInfo:
     def started_at(self) -> datetime:
         return datetime.fromisoformat(self.start_time)
 
+    @property
     def dataset_path(self) -> str:
         args = self.command.split(" ")
         dataset_path = args[2] if self.algorithm == "bico" else args[3]
         return dataset_path
+
+    @property
+    def is_low_dimensional_dataset(self) -> str:
+        return "lowd" in self.dataset
+
+    @property
+    def original_dataset_name(self) -> str:
+        return self.dataset.replace("lowd", "")
