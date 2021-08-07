@@ -48,3 +48,8 @@ class RunInfo:
     @property
     def started_at(self) -> datetime:
         return datetime.fromisoformat(self.start_time)
+
+    def dataset_path(self) -> str:
+        args = self.command.split(" ")
+        dataset_path = args[2] if self.algorithm == "bico" else args[3]
+        return dataset_path
