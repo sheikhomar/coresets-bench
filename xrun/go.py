@@ -93,16 +93,17 @@ class ExternalDataset(Dataset):
 
 
 class BenchmarkDataset(Dataset):
-    def __init__(self) -> None:
+    def __init__(self, beta: int) -> None:
         super().__init__(name="hardinstance")
+        self._beta = beta
     
     def get_local_file_path(self, k: int) -> Path:
         names = {
-            10: "benchmark-k10-alpha6.txt.gz",
-            20: "benchmark-k20-alpha5.txt.gz",
-            30: "benchmark-k30-alpha4.txt.gz",
-            40: "benchmark-k40-alpha4.txt.gz",
-            50: "benchmark-k50-alpha4.txt.gz",
+            10: f"benchmark-k10-alpha6-beta{self._beta:0.2f}.txt.gz",
+            20: f"benchmark-k20-alpha5-beta{self._beta:0.2f}.txt.gz",
+            30: f"benchmark-k30-alpha4-beta{self._beta:0.2f}.txt.gz",
+            40: f"benchmark-k40-alpha4-beta{self._beta:0.2f}.txt.gz",
+            50: f"benchmark-k50-alpha4-beta{self._beta:0.2f}.txt.gz",
         }
         return Path(f"data/input/{names[k]}")
 
@@ -187,7 +188,8 @@ class ExperimentRunner:
                     download_url="http://homepages.uni-paderborn.de/frahling/instances/Tower.txt",
                     file_size=52828754
                 ),
-        "hardinstance": BenchmarkDataset(),
+        "hardinstanceb1": BenchmarkDataset(beta=1),
+        "hardinstanceb2": BenchmarkDataset(beta=2),
     }
     _datasets["censuslowd"] = LowDimensionalDataset(_datasets["census"])
     _datasets["covertypelowd"] = LowDimensionalDataset(_datasets["covertype"])
