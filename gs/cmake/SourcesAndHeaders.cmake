@@ -6,6 +6,7 @@ set(headers
     include/coresets/basic.hpp
     include/coresets/coreset.hpp
     include/coresets/group_sampling.hpp
+    include/coresets/ray.hpp
     include/coresets/sensitivity_sampling.hpp
     include/coresets/stream_km.hpp
     include/data/bow_parser.hpp
