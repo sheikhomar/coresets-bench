@@ -32,7 +32,7 @@ def unzip_file(input_path: Path) -> Path:
     return output_path
 
 
-def compute_centers(result_file_path: Path) -> Path:
+def compute_centers_via_external_kmeanspp(result_file_path: Path) -> Path:
     center_path = result_file_path.parent / "centers.txt"
     
     if center_path.exists() and center_path.stat().st_size > 0:
@@ -71,6 +71,31 @@ def compute_centers(result_file_path: Path) -> Path:
     return center_path
 
 
+def get_centers(result_file_path: Path) -> np.ndarray:
+    for i in range(10):
+        centers_file_path = compute_centers_via_external_kmeanspp(result_file_path)
+        centers = np.loadtxt(fname=centers_file_path, dtype=np.double, delimiter=' ', skiprows=0)
+        center_weights = centers[:,0] 
+        center_points = centers[:,1:]
+
+        if np.any(np.isnan(center_points)):
+            print("Detected NaN values in the computed centers.")
+
+            center_nan_count = np.count_nonzero(np.isnan(center_points))
+            center_inf_count = np.count_nonzero(np.isinf(center_points))
+
+            print(f"- NaN Count: {center_nan_count}")
+            print(f"- Inf Count: {center_inf_count}")
+            print(f"- NaN: {np.argwhere(np.isnan(center_points))}")
+            
+            print(f"Removing {centers_file_path}...")
+            os.remove(centers_file_path)
+        else:
+            return center_points
+
+    raise Exception(f"Failed to find centers without NaN values. Giving up after {i+1} iterations!")
+
+
 datasets = dict()
 
 def load_original_data(run_info: RunInfo):
@@ -96,16 +121,12 @@ def load_original_data(run_info: RunInfo):
     return datasets[dataset_name]
 
 
-def compute_real_cost(experiment_dir: Path, centers_file_path: Path, data_points: np.ndarray) -> Path:
+def compute_real_cost(experiment_dir: Path, center_points: np.ndarray, data_points: np.ndarray) -> Path:
     cost_file_path = experiment_dir / "real_cost.txt"
     if cost_file_path.exists():
         return cost_file_path
 
     print("Computing real cost... ", end="")
-
-    centers = np.loadtxt(fname=centers_file_path, dtype=np.double, delimiter=' ', skiprows=0)
-    center_weights = centers[:,0] 
-    center_points = centers[:,1:]
 
     # Distances between all data points and center points
     D = pairwise_distances(data_points, center_points, metric="sqeuclidean")
@@ -123,7 +144,7 @@ def compute_real_cost(experiment_dir: Path, centers_file_path: Path, data_points
     return cost_file_path
 
 
-def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path, added_cost: float) -> Path:
+def compute_coreset_costs(coreset_file_path: Path, center_points: np.ndarray, added_cost: float) -> Path:
     cost_file_path = coreset_file_path.parent / "coreset_cost.txt"
     if cost_file_path.exists():
         return cost_file_path
@@ -132,10 +153,6 @@ def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path, adde
     coreset = np.loadtxt(fname=coreset_file_path, dtype=np.double, delimiter=' ', skiprows=1)
     coreset_weights = coreset[:,0]
     coreset_points = coreset[:,1:]
-
-    centers = np.loadtxt(fname=centers_file_path, dtype=np.double, delimiter=' ', skiprows=0)
-    center_weights = centers[:,0] 
-    center_points = centers[:,1:]
 
     # Distances between all corset points and center points
     D = pairwise_distances(coreset_points, center_points, metric="sqeuclidean")
@@ -209,20 +226,20 @@ def main(results_dir: str) -> None:
             print("Cannot process results file because run file is missing.")
             continue
 
-        try:
-            original_data_points = load_original_data(run_info)
-        except FileNotFoundError as ex:
-            print(f"Cannot load original dataset! Error: {ex}")
+        if not os.path.exists(run_info.dataset_path):
+            print(f"Dataset path: {run_info.dataset_path} cannot be found. Skipping...")
             continue
 
         added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
 
         unzipped_result_path = unzip_file(result_path)
-        centers_file_path = compute_centers(unzipped_result_path)
-        compute_coreset_costs(unzipped_result_path, centers_file_path, added_cost)
+        centers = get_centers(unzipped_result_path)
+        compute_coreset_costs(unzipped_result_path, centers, added_cost)
         print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
         os.remove(unzipped_result_path)
-        compute_real_cost(experiment_dir, centers_file_path, original_data_points)
+
+        original_data_points = load_original_data(run_info)
+        compute_real_cost(experiment_dir, centers, original_data_points)
         print(f"Done processing file {index+1} of {total_files}.")
         
 
