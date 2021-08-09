@@ -160,7 +160,7 @@ def compute_coreset_costs(coreset_file_path: Path, centers_file_path: Path, adde
 def load_run_info(experiment_dir: Path) -> Optional[RunInfo]:
     run_file_paths = list(experiment_dir.glob("*.json"))
     if len(run_file_paths) != 1:
-        print(f"Expected a single run file in {experiment_dir} but found {len(run_file_paths)} files.")
+        # print(f"Expected a single run file in {experiment_dir} but found {len(run_file_paths)} files.")
         return None
     return RunInfo.load_json(run_file_paths[0])
 
@@ -174,7 +174,8 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
             os.path.exists(file_path.parent / cfn)
             for cfn in ["real_cost.txt", "coreset_cost.txt"]
         ])
-        if not costs_computed:
+        run_info = load_run_info(file_path.parent)
+        if not costs_computed and run_info is not None:
             return_paths.append(file_path)
     return return_paths
 
