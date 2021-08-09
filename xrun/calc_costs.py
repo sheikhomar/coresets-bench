@@ -208,6 +208,12 @@ def main(results_dir: str) -> None:
             print("Cannot process results file because run file is missing.")
             continue
 
+        try:
+            original_data_points = load_original_data(run_info)
+        except FileNotFoundError as ex:
+            print(f"Cannot load original dataset! Error: {ex}")
+            continue
+
         added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
 
         unzipped_result_path = unzip_file(result_path)
@@ -215,8 +221,6 @@ def main(results_dir: str) -> None:
         compute_coreset_costs(unzipped_result_path, centers_file_path, added_cost)
         print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
         os.remove(unzipped_result_path)
-
-        original_data_points = load_original_data(run_info)
         compute_real_cost(experiment_dir, centers_file_path, original_data_points)
         print(f"Done processing file {index+1} of {total_files}.")
         
