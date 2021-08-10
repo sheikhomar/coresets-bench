@@ -20,10 +20,10 @@ namespace coresets
         utils::Random random;
 
     public:
-        const size_t PointIndex;
+        const size_t OriginIndex;
         blaze::DynamicVector<double> Direction;
         
-        RandomRay(const size_t pointIndex, const size_t dimensions) : PointIndex(pointIndex), Direction(dimensions)
+        RandomRay(const size_t originIndex, const size_t dimensions) : OriginIndex(originIndex), Direction(dimensions)
         {
             random.normal(Direction);
             Direction = Direction / blaze::l2Norm(Direction);
@@ -38,6 +38,59 @@ namespace coresets
             // std::cout << "norm(r) = " << blaze::l2Norm(Direction) << "\n";
         }
 
+        double
+        distanceToPoint(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex)
+        {
+            // To find the distance from a ray to a given point p, we first find the closest point on a ray.
+            // This can be done by projecting that point on the line spanned by the ray.
+            // We just have to remember that a ray does not span a line but starts at some point (origin)
+            // and goes infinitely to a direction.
+            const size_t d = data.columns();
+            // blaze::DynamicVector<double> rayVector(d);
+            
+            // Suppose r = a + b is the ray vector where a is the origin and b is the direction 
+            // Compute following quantities:
+            //                rpDotProd = <r,p> where p is the point and <,> is the dot product
+            //                rrDotProd = <r,r>
+            //     projectedPointLength = <r,p> / <r,r>
+            // The projected point is given by: ( <r,p> / <r,r> ) * r
+            // If the length of the projected point is negative then the distance to from ray r to point p is:
+            //   || a - p ||
+            // Otherwise the distance is computed as:
+            //   || p' - p ||
+            //  where p' is the projected point onto the ray computed: p' = a + projectedPointLength * b 
+
+            double rrDotProd = 0.0, rpDotProd = 0.0;
+            for (size_t j = 0; j < d; j++)
+            {
+                double rayVector_j = data.at(OriginIndex, j) + Direction[j];
+                rpDotProd += rayVector_j * data.at(otherPointIndex, j);
+                rrDotProd += rayVector_j * rayVector_j;
+            }
+
+            auto projectedPointLength = std::max(0.0, rpDotProd / rrDotProd);
+            if (projectedPointLength > 0)
+            {
+                double dotProd = 0.0;
+                for (size_t j = 0; j < d; j++)
+                {
+                    auto projectedPoint_j = data.at(OriginIndex, j) + projectedPointLength * Direction[j];
+                    auto diff = projectedPoint_j - data.at(otherPointIndex, j);
+                    dotProd += diff * diff;
+                }
+                return std::sqrt(dotProd);
+            }
+            else
+            {
+                double dotProd = 0.0;
+                for (size_t j = 0; j < d; j++)
+                {
+                    auto diff = data.at(OriginIndex, j) - data.at(otherPointIndex, j);
+                    dotProd += diff * diff;
+                }
+                return std::sqrt(dotProd);
+            }
+        }
     };
 
     class RayMaker
