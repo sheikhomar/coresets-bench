@@ -25,6 +25,13 @@ namespace utils
     {
     public:
         /**
+         * @brief Initialises random class.
+         */
+        Random();
+
+        static void initialize(int fixedSeed);
+
+        /**
          * Returns a random real number in the interval [0.0, 1.0).
          */
         double
@@ -83,12 +90,7 @@ namespace utils
         size_t
         stochasticRounding(double value);
 
-        /**
-         * @brief Initialises random class.
-         */
-        Random();
-
-        static void initialize(int fixedSeed);
+        void normal(blaze::DynamicVector<double> &vector);
 
     private:
         
