@@ -68,28 +68,16 @@ namespace coresets
                 rrDotProd += rayVector_j * rayVector_j;
             }
 
-            auto projectedPointLength = std::max(0.0, rpDotProd / rrDotProd);
-            if (projectedPointLength > 0)
+            auto projectedPointLength = rpDotProd / rrDotProd;
+            double dotProd = 0.0;
+            for (size_t j = 0; j < d; j++)
             {
-                double dotProd = 0.0;
-                for (size_t j = 0; j < d; j++)
-                {
-                    auto projectedPoint_j = data.at(OriginIndex, j) + projectedPointLength * Direction[j];
-                    auto diff = projectedPoint_j - data.at(otherPointIndex, j);
-                    dotProd += diff * diff;
-                }
-                return std::sqrt(dotProd);
+                auto projectedPoint_j = data.at(OriginIndex, j) + projectedPointLength * Direction[j];
+                auto diff = projectedPoint_j - data.at(otherPointIndex, j);
+                dotProd += diff * diff;
             }
-            else
-            {
-                double dotProd = 0.0;
-                for (size_t j = 0; j < d; j++)
-                {
-                    auto diff = data.at(OriginIndex, j) - data.at(otherPointIndex, j);
-                    dotProd += diff * diff;
-                }
-                return std::sqrt(dotProd);
-            }
+            return std::sqrt(dotProd);
+        
         }
     };
 
