@@ -14,6 +14,7 @@
 #include <utils/random.hpp>
 #include <utils/stop_watch.hpp>
 #include <blaze/Blaze.h>
+#include <Ckmeans.1d.dp.h>
 
 using namespace std;
 using namespace clustering;
