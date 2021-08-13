@@ -23,44 +23,19 @@ namespace coresets
     public:
         const size_t OriginIndex;
         blaze::DynamicVector<double> Direction;
+        std::vector<size_t> points;
+        std::vector<double> pointLengths;
         
         RandomRay(const size_t originIndex, const size_t dimensions) : OriginIndex(originIndex), Direction(dimensions)
         {
             random.normal(Direction);
             Direction = Direction / blaze::l2Norm(Direction);
-
-            // std::cout << "Normalized direction:                 [";
-            // for (auto &&entry : Direction)
-            // {
-            //     std::cout << entry << " ";
-            // }
-            // std::cout << "]\n";
-
-            // std::cout << "norm(r) = " << blaze::l2Norm(Direction) << "\n";
         }
 
         double
-        distanceToPoint(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex)
+        computeProjectedPointLength(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex)
         {
-            // To find the distance from a ray to a given point p, we first find the closest point on a ray.
-            // This can be done by projecting that point on the line spanned by the ray.
-            // We just have to remember that a ray does not span a line but starts at some point (origin)
-            // and goes infinitely to a direction.
             const size_t d = data.columns();
-            // blaze::DynamicVector<double> rayVector(d);
-            
-            // Suppose r = a + b is the ray vector where a is the origin and b is the direction 
-            // Compute following quantities:
-            //                rpDotProd = <r,p> where p is the point and <,> is the dot product
-            //                rrDotProd = <r,r>
-            //     projectedPointLength = <r,p> / <r,r>
-            // The projected point is given by: ( <r,p> / <r,r> ) * r
-            // If the length of the projected point is negative then the distance to from ray r to point p is:
-            //   || a - p ||
-            // Otherwise the distance is computed as:
-            //   || p' - p ||
-            //  where p' is the projected point onto the ray computed: p' = a + projectedPointLength * b 
-
             double rrDotProd = 0.0, rpDotProd = 0.0;
             for (size_t j = 0; j < d; j++)
             {
@@ -68,8 +43,14 @@ namespace coresets
                 rpDotProd += rayVector_j * data.at(otherPointIndex, j);
                 rrDotProd += rayVector_j * rayVector_j;
             }
+            return rpDotProd / rrDotProd;
+        }
 
-            auto projectedPointLength = rpDotProd / rrDotProd;
+        double
+        distanceToPoint(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex)
+        {
+            const size_t d = data.columns();
+            auto projectedPointLength = computeProjectedPointLength(data, otherPointIndex);
             double dotProd = 0.0;
             for (size_t j = 0; j < d; j++)
             {
@@ -78,7 +59,12 @@ namespace coresets
                 dotProd += diff * diff;
             }
             return std::sqrt(dotProd);
-        
+        }
+
+        void assign(const blaze::DynamicMatrix<double> &data, const size_t pointIndex)
+        {
+            points.push_back(pointIndex);
+            pointLengths.push_back(computeProjectedPointLength(data, pointIndex));
         }
     };
 
@@ -152,15 +138,37 @@ namespace coresets
             std::vector<std::shared_ptr<RandomRay>> rays;
             for (auto &&centerPoint : initialSolution)
             {
+                std::vector<std::shared_ptr<RandomRay>> clusterRays;
                 std::cout << "Generating random rays for center " << centerPoint << "\n";
                 for (size_t i = 0; i < numberOfRaysPerCenter; i++)
                 {
                     auto ray = std::make_shared<RandomRay>(centerPoint, d);
                     rays.push_back(ray);
+                    clusterRays.push_back(ray);
                 }
 
                 auto points = clusters.getPointsByCluster(centerPoint);
                 std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
+
+                for (auto &&p : *points)
+                {
+                    double bestDistance = std::numeric_limits<double>::max();
+                    size_t bestRayIndex = 0;
+
+                    for (size_t r = 0; r < clusterRays.size(); r++)
+                    {
+                        const double distance = clusterRays[r]->distanceToPoint(data, p);
+                        if (distance < bestDistance)
+                        {
+                            bestDistance = distance;
+                            bestRayIndex = r;
+                        }
+                    }
+
+                    // Assign point to the ray with smallest distance.
+                    clusterRays[bestRayIndex]->assign(data, p);
+                }
+                
 
             }
 
