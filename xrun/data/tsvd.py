@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from scipy import linalg
+from scipy.sparse import linalg as sparse_linalg, issparse
 
 from xrun.data.loader import load_dataset
 
@@ -17,12 +18,15 @@ def perform_projection(X, target_dim: int):
     # U: Unitary matrix having left singular vectors as columns. 
     # s: The singular values, sorted in descending order.
     # V: Unitary matrix having right singular vectors as rows.
-    U, s, V = linalg.svd(
-        a=X,
-        full_matrices=False,
-        overwrite_a=True,
-        lapack_driver='gesdd'
-    )
+    if issparse(X):
+        U, s, V = sparse_linalg.eigen.svds(A=X, solver='arpack')
+    else:
+        U, s, V = linalg.svd(
+            a=X,
+            full_matrices=False,
+            overwrite_a=True,
+            lapack_driver='gesdd'
+        )
 
     # Only take the k singular vectors corresponding to the largest singular values
     # by zeroing out the rest of singular values in `s`.
