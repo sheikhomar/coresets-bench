@@ -10,6 +10,7 @@
 #include <clustering/kmeans.hpp>
 #include <coresets/coreset.hpp>
 #include <utils/random.hpp>
+#include <utils/distances.hpp>
 #include <blaze/Math.h>
 
 namespace coresets
@@ -98,13 +99,44 @@ namespace coresets
 
         }
 
+        void
+        clusterPoints(const blaze::DynamicMatrix<double> &data, const std::vector<size_t> centerPoints, clustering::ClusterAssignmentList &clusters)
+        {
+            const size_t n = data.rows();
+            utils::L2NormCalculator l2Norm(data, false);
+
+            for (size_t p = 0; p < n; p++)
+            {
+                double bestDistance = std::numeric_limits<double>::max();
+                size_t bestCluster = 0;
+
+                // Loop through all the clusters.
+                for (auto &&c : centerPoints)
+                {
+                    // Compute the L2 norm between point p and centroid c.
+                    const double distance = l2Norm.calc(p, c);
+
+                    // Decide if current distance is better.
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestCluster = c;
+                    }
+                }
+
+                // Assign cluster to the point p.
+                clusters.assign(p, bestCluster, bestDistance);
+            }
+        }
+
         std::shared_ptr<Coreset>
         run(const blaze::DynamicMatrix<double> &data)
         {
             auto coreset = std::make_shared<Coreset>(TargetSamplesInCoreset);
 
-            size_t d = data.columns();
-            size_t k = NumberOfClusters;
+            const size_t n = data.rows();
+            const size_t d = data.columns();
+            const size_t k = NumberOfClusters;
 
             // Compute initial solution S
             clustering::KMeans kMeansAlg(k);
@@ -114,15 +146,22 @@ namespace coresets
             size_t numberOfRaysPerCenter = std::ceil(std::pow(Epsilon, -static_cast<double>(d)));
             std::cout << "Number of rays: " << numberOfRaysPerCenter << "\n";
 
+            clustering::ClusterAssignmentList clusters(n, k);
+            clusterPoints(data, initialSolution, clusters);
+
             std::vector<std::shared_ptr<RandomRay>> rays;
-            for (auto &&center : initialSolution)
+            for (auto &&centerPoint : initialSolution)
             {
-                std::cout << "Generating random rays for center " << center << "\n";
+                std::cout << "Generating random rays for center " << centerPoint << "\n";
                 for (size_t i = 0; i < numberOfRaysPerCenter; i++)
                 {
-                    auto ray = std::make_shared<RandomRay>(center, d);
-                    rays.push_back(ray);    
+                    auto ray = std::make_shared<RandomRay>(centerPoint, d);
+                    rays.push_back(ray);
                 }
+
+                auto points = clusters.getPointsByCluster(centerPoint);
+                std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
+
             }
 
             // Snap every data point to the closest ray.
