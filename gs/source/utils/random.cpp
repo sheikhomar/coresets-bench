@@ -128,17 +128,9 @@ Random::stochasticRounding(double value)
 
 void Random::normal(blaze::DynamicVector<double> &vector)
 {
-    std::cout << "Generating random vector of size: " << vector.size() << ". ";
     std::normal_distribution<double> distribution(0.0, 1.0);
     auto entryGenerator = [&distribution]() {
         return distribution(randomEngine);
     };
     std::generate(vector.begin(), vector.end(), entryGenerator);
-
-    std::cout << " [";
-    for (auto i : vector)
-    {
-        std::cout << i << " ";
-    }
-    std::cout << "]\n";
 }
