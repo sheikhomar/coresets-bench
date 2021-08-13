@@ -121,6 +121,9 @@ namespace clustering
         void
         calcCenters(const blaze::DynamicMatrix<double> &dataPoints, blaze::DynamicMatrix<double> &centers);
 
+        std::shared_ptr<std::vector<size_t>>
+        getPointsByCluster(size_t clusterIndex) const;
+
     private:
         /**
          * The total number of points in the dataset.

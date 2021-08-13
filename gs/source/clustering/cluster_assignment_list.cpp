@@ -194,3 +194,17 @@ void ClusterAssignmentList::calcCenters(const blaze::DynamicMatrix<double> &data
         blaze::row(newCenters, c) /= count;
     }
 }
+
+std::shared_ptr<std::vector<size_t>>
+ClusterAssignmentList::getPointsByCluster(size_t clusterIndex) const
+{
+    auto pointsToReturn = std::make_shared<std::vector<size_t>>();
+    for (size_t p = 0; p < this->numOfPoints; p++)
+    {
+        if (clusters[p] == clusterIndex)
+        {
+            pointsToReturn->push_back(p);
+        }
+    }
+    return pointsToReturn;
+}
