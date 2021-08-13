@@ -5,7 +5,7 @@ import click
 import numpy as np
 import pandas as pd
 
-def generate_benchmark(k: int, alpha: int, beta: int):
+def generate_benchmark(k: int, alpha: int, beta: float):
     """Generate benchmark dataset.
 
     Parameters
@@ -93,7 +93,7 @@ def gen_benchmark(block_size: int, alpha: int, beta: int, output_dir: str):
 @click.option(
     "-b",
     "--beta",
-    type=click.INT,
+    type=click.FLOAT,
     required=True,
 )
 @click.option(
@@ -102,7 +102,7 @@ def gen_benchmark(block_size: int, alpha: int, beta: int, output_dir: str):
     type=click.STRING,
     required=True,
 )
-def main(block_size: int, alpha: int, beta: int, output_dir: str):
+def main(block_size: int, alpha: int, beta: float, output_dir: str):
     gen_benchmark(
         block_size=block_size,
         alpha=alpha,
