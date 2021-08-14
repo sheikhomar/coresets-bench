@@ -189,6 +189,7 @@ class ExperimentRunner:
                     file_size=52828754
                 ),
         "hardinstanceb1": BenchmarkDataset(beta=1),
+        "hardinstanceb15": BenchmarkDataset(beta=1.5),
         "hardinstanceb2": BenchmarkDataset(beta=2),
     }
     _datasets["censuslowd"] = LowDimensionalDataset(_datasets["census"])
