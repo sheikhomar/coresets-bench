@@ -11,6 +11,7 @@ from pathlib import Path
 import click
 
 from sklearn.metrics import pairwise_distances
+from scipy.sparse import issparse
 
 from xrun.gen import generate_random_seed
 from xrun.data.loader import load_dataset
@@ -116,7 +117,10 @@ def load_original_data(run_info: RunInfo):
             dataset_path = dataset_paths[dataset_name]
         else:
             dataset_path = run_info.dataset_path
-        datasets[dataset_name] = load_dataset(dataset_path)
+        dataset = load_dataset(dataset_path)
+        if issparse(dataset):
+            dataset = dataset.todense()
+        datasets[dataset_name] = dataset
 
     return datasets[dataset_name]
 
