@@ -175,11 +175,11 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       centerIndex = random.choice(weights);
     }
 
-    std::cout << "Picked point " << centerIndex << " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << "\n";
+    std::cout << "Picked point " << centerIndex << " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << std::endl;
     pickedPointsAsCenters.push_back(centerIndex);
   }
 
-  std::cout << "k-means++ initialization completed in " << sw.elapsedStr() << "\n";
+  std::cout << "k-means++ initialization completed in " << sw.elapsedStr() << std::endl;
 
   return pickedPointsAsCenters;
 }

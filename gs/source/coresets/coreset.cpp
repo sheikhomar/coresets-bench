@@ -76,12 +76,19 @@ void Coreset::setClusterAssignments(const clustering::ClusterAssignmentList &ass
 
 void Coreset::writeToStream(const blaze::DynamicMatrix<double> &originalDataPoints, std::ostream &out)
 {
+    std::cout << "Write coreset data to a stream." << std::endl;
+
     const size_t m = this->points.size();
     const size_t d = originalDataPoints.columns();
 
     // Compute the centers using the stored cluster assignments.
     blaze::DynamicMatrix<double> centers;
-    this->clusterAssignments.calcCenters(originalDataPoints, centers);
+    {
+        std::cout << "Computed centers." << std::endl;
+        utils::StopWatch sw(true);
+        this->clusterAssignments.calcCenters(originalDataPoints, centers);
+        std::cout << "Computed centers in " << sw.elapsedStr() << std::endl;
+    }
 
     // Output coreset size
     out << m << "\n";
