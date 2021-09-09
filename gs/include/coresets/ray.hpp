@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <map>
 
 #include <clustering/clustering_result.hpp>
 #include <clustering/kmeans.hpp>
@@ -77,12 +78,11 @@ namespace coresets
          * Number of points that the algorithm should aim to include in the coreset: T
          */
         const size_t TargetSamplesInCoreset;
-        const double Epsilon;
+        const size_t NumberOfRaysPerCluster;
         const size_t NumberOfClusters;
 
-        RayMaker(size_t targetSamplesInCoreset, size_t k, double epsilon): TargetSamplesInCoreset(targetSamplesInCoreset), Epsilon(epsilon), NumberOfClusters(k)
+        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t numberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), NumberOfRaysPerCluster(numberOfRaysPerCluster)
         {
-
         }
 
         void
@@ -128,10 +128,6 @@ namespace coresets
             clustering::KMeans kMeansAlg(k);
             auto initialSolution = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data, false);
 
-            // Around the centers of S, shoot epsilon^-d many rays
-            size_t numberOfRaysPerCenter = std::ceil(std::pow(Epsilon, -static_cast<double>(d)));
-            std::cout << "Number of rays: " << numberOfRaysPerCenter << "\n";
-
             clustering::ClusterAssignmentList clusters(n, k);
             clusterPoints(data, initialSolution, clusters);
 
@@ -140,7 +136,7 @@ namespace coresets
             {
                 std::vector<std::shared_ptr<RandomRay>> clusterRays;
                 std::cout << "Generating random rays for center " << centerPoint << "\n";
-                for (size_t i = 0; i < numberOfRaysPerCenter; i++)
+                for (size_t i = 0; i < NumberOfRaysPerCluster; i++)
                 {
                     auto ray = std::make_shared<RandomRay>(centerPoint, d);
                     rays.push_back(ray);
@@ -168,11 +164,13 @@ namespace coresets
                     // Assign point to the ray with smallest distance.
                     clusterRays[bestRayIndex]->assign(data, p);
                 }
-                
-
             }
 
-            // Snap every data point to the closest ray.
+            for (auto &&ray : rays)
+            {
+                std::cout <<  "Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
+            }
+            
             return coreset;
         }
     };
