@@ -5,6 +5,9 @@ import click
 import numpy as np
 import pandas as pd
 
+from numba import jit
+
+@jit(nopython=True) # Set "nopython" mode for best performance, equivalent to @njit
 def generate_benchmark(k: int, alpha: int, beta: float):
     """Generate benchmark dataset.
 
@@ -14,44 +17,41 @@ def generate_benchmark(k: int, alpha: int, beta: float):
         The size of the initial block which is a square k-by-k matrix.
     alpha: int
         The number of the column blocks.
-
+    beta: float:
+        The factor for which to scale the column box.
     Returns
     -------
     np.array
         Returns a matrix of size (k^alpha x alpha*k)
     """
-    # Construct top right corner k-by-k block
-    diag_entries = np.identity(k, dtype=np.double) * ((k-1)/k)
-    off_diag_entries = (~np.eye(k,dtype=bool)) * (-1/k)
-    block = diag_entries + off_diag_entries
-    
     # Create NxD matrix
     n = k ** alpha
     d = alpha * k
     data = np.zeros((n, d))
-    
-    n_row_blocks = n // k
-    
-    # Construct first layer which corresponds to
-    # repeating block entries downwards some number of times
-    first_layer = np.tile(block, (n_row_blocks, 1))
-    
-    # Fill the last k columns of the matrix
-    data[:,-k:] = first_layer
-    
-    # Fill the rest by using the copy-stack operation
-    for j in range(d-k-1, -1, -1):
-        for i in range(0, n, 1):
-            copy_i = i // k
-            copy_j = j + k
-            data[i,j] = data[copy_i, copy_j]
 
-    # Scale column blocks
+    # Construct the first N-by-k left-side of the matrix
+    for i in range(n):
+        for j in range(k):
+            value = 0
+            if i % k == j:
+                value = (k-1) / k
+            else:
+                value = -1/k
+            data[i,j] = value
+
+    # Fill the rest by using the copy-stack operation
+    for j in range(k, d):
+        for i in range(n):
+            copy_i = i // k
+            copy_j = j - k
+            data[i,j] = data[copy_i, copy_j]
+    
+    # Apply columnblock-level scaling factor beta
     if beta > 1:
         for i in range(alpha):
             start_col = i*k
             end_col = i*k + k
-            beta_val = beta ** (-i)
+            beta_val = np.power(beta, float(-i))
             data[:, start_col:end_col] *= beta_val
 
     return data
@@ -66,7 +66,7 @@ def gen_benchmark(block_size: int, alpha: int, beta: int, output_dir: str):
         beta=beta,
     )
     end_time = timer()
-    print(f"Dataset of shape {dataset.shape} generated in {end_time - start_time:.2f} secs")
+    print(f"Dataset of shape {dataset.shape} (size: {dataset.nbytes / 1024 / 1024:0.0f} MB) generated in {end_time - start_time:.2f} secs")
 
     print("Storing data on disk...")
     start_time = timer()
@@ -94,7 +94,8 @@ def gen_benchmark(block_size: int, alpha: int, beta: int, output_dir: str):
     "-b",
     "--beta",
     type=click.FLOAT,
-    required=True,
+    required=False,
+    default=1.0,
 )
 @click.option(
     "-o",
