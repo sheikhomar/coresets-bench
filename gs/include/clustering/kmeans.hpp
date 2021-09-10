@@ -13,6 +13,7 @@
 #include <clustering/clustering_result.hpp>
 #include <utils/random.hpp>
 #include <utils/stop_watch.hpp>
+#include <utils/distances.hpp>
 
 namespace clustering
 {

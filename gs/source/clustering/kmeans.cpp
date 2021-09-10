@@ -75,36 +75,10 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
 {
   utils::Random random;
   size_t n = data.rows();
-  size_t d = data.columns();
   size_t k = this->NumOfClusters;
   utils::StopWatch sw(true);
 
-  std::vector<double> dataSquaredNorms;
-  dataSquaredNorms.resize(n);
-  computeSquaredNorms(data, dataSquaredNorms);
-
-  // Lambda function computes the squared L2 distance between any pair of points.
-  // The function will automatically use any precomputed distance if it exists.
-  auto calcSquaredL2Norm = [&data, &dataSquaredNorms, d](size_t p1, size_t p2) -> double
-  {
-    if (p1 == p2)
-    {
-      return 0.0;
-    }
-
-    double dotProd = 0.0, val1 = 0.0, val2 = 0.0;
-    for (size_t i = 0; i < d; i++)
-    {
-      val1 = data.at(p1, i);
-      val2 = data.at(p2, i);
-      if (val1 != 0.0 && val2 != 0.0) // Only compute for non-zero
-      {
-        dotProd += val1 * val2;
-      }
-    }
-
-    return dataSquaredNorms[p1] + dataSquaredNorms[p2] - 2 * dotProd;
-  };
+  utils::L2NormCalculator squaredL2Norm(data, true);
 
   // Track which points are picked as centers.
   std::vector<size_t> pickedPointsAsCenters;
@@ -132,7 +106,7 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       for (size_t p1 = 0; p1 < n; p1++)
       {
         // Compute dist2(p, C_k)
-        double distance = calcSquaredL2Norm(p1, centerIndex);
+        double distance = squaredL2Norm.calc(p1, centerIndex);
 
         // Compute min_dist^2(p, C_k-1)
         // Decide if current distance is better.
