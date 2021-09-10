@@ -122,6 +122,9 @@ namespace clustering
         void
         calcCenters(const blaze::DynamicMatrix<double> &dataPoints, blaze::DynamicMatrix<double> &centers);
 
+        std::shared_ptr<blaze::DynamicVector<double>>
+        calcCenter(const blaze::DynamicMatrix<double> &dataPoints, const size_t clusterIndex) const;
+
         std::shared_ptr<std::vector<size_t>>
         getPointsByCluster(size_t clusterIndex) const;
 

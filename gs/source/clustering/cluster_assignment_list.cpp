@@ -209,6 +209,42 @@ void ClusterAssignmentList::calcCenters(const blaze::DynamicMatrix<double> &data
     }
 }
 
+std::shared_ptr<blaze::DynamicVector<double>>
+ClusterAssignmentList::calcCenter(const blaze::DynamicMatrix<double> &dataPoints, const size_t clusterIndex) const
+{
+    const size_t n = dataPoints.rows();
+    const size_t d = dataPoints.columns();
+    const size_t k = this->numOfClusters;
+
+    auto center = std::make_shared<blaze::DynamicVector<double>>();
+
+    // Reset variables.
+    size_t memberCount = 0;
+
+    for (size_t p = 0; p < n; p++)
+    {
+        const size_t c = this->clusters[p];
+
+        if (c == clusterIndex)
+        {
+            for (size_t j = 0; j < d; j++)
+            {
+                center->at(j) += dataPoints.at(p, j);
+            }
+
+            memberCount += 1;
+        }
+    }
+
+    // Divide centers by the number of points in each cluster.
+    for (size_t j = 0; j < d; j++)
+    {
+        center->at(j) /= memberCount;
+    }
+
+    return center;
+}
+
 std::shared_ptr<std::vector<size_t>>
 ClusterAssignmentList::getPointsByCluster(size_t clusterIndex) const
 {
