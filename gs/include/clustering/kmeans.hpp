@@ -26,11 +26,10 @@ namespace clustering
          * @brief Creates a new instance of KMeans.
          * @param numOfClusters The number of clusters to generate.
          * @param initKMeansPlusPlus Initialise centroids using k-Means++.
-         * @param precomputeDistances Precompute pairwise distances to speed up computation.
          * @param maxIterations Maximum number of iterations.
          * @param convergenceDiff The difference in the norms of the centroids when to stop k-Means iteration.
          */
-        KMeans(uint numOfClusters, bool initKMeansPlusPlus = true, bool precomputeDistances = false, uint maxIterations = 300, double convergenceDiff = 0.0001);
+        KMeans(size_t numOfClusters, bool initKMeansPlusPlus = true, size_t maxIterations = 300, double convergenceDiff = 0.0001);
 
         /**
          * @brief Runs the algorithm.
@@ -45,7 +44,7 @@ namespace clustering
          * @param precomputeDistances Whether to precompute pairwise distances.
          */
         std::vector<size_t>
-        pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &dataMatrix, const bool precomputeDistances);
+        pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &dataMatrix);
 
         blaze::DynamicMatrix<double>
         copyRows(const blaze::DynamicMatrix<double> &data, const std::vector<size_t> &indicesToCopy);
@@ -55,7 +54,6 @@ namespace clustering
         const bool InitKMeansPlusPlus;
         const size_t MaxIterations;
         const double ConvergenceDiff;
-        const bool PrecomputeDistances;
 
         /**
          * @brief Run Lloyd's algorithm to perform the clustering of data points.

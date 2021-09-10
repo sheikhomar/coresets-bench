@@ -126,7 +126,7 @@ namespace coresets
 
             // Compute initial solution S
             clustering::KMeans kMeansAlg(k);
-            auto initialSolution = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data, false);
+            auto initialSolution = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data);
 
             clustering::ClusterAssignmentList clusters(n, k);
             clusterPoints(data, initialSolution, clusters);

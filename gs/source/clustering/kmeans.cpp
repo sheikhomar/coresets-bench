@@ -2,7 +2,7 @@
 
 using namespace clustering;
 
-KMeans::KMeans(uint k, bool kpp, bool precomputeDistances, uint miter, double convDiff) : NumOfClusters(k), InitKMeansPlusPlus(kpp), PrecomputeDistances(precomputeDistances), MaxIterations(miter), ConvergenceDiff(convDiff)
+KMeans::KMeans(size_t k, bool useKmeansPlusPlus, size_t nIter, double convDiff) : NumOfClusters(k), InitKMeansPlusPlus(useKmeansPlusPlus), MaxIterations(nIter), ConvergenceDiff(convDiff)
 {
 }
 
@@ -10,21 +10,18 @@ std::shared_ptr<ClusteringResult>
 KMeans::run(const blaze::DynamicMatrix<double> &data)
 {
   std::vector<size_t> initialCenters;
-  size_t k = this->NumOfClusters;
-  size_t n = data.rows();
-  size_t d = data.columns();
 
   if (this->InitKMeansPlusPlus)
   {
-    initialCenters = this->pickInitialCentersViaKMeansPlusPlus(data, PrecomputeDistances);
+    initialCenters = this->pickInitialCentersViaKMeansPlusPlus(data);
   }
   else
   {
     utils::Random random;
 
-    auto randomPointGenerator = random.getIndexer(n);
+    auto randomPointGenerator = random.getIndexer(data.rows());
 
-    for (size_t c = 0; c < k; c++)
+    for (size_t c = 0; c < this->NumOfClusters; c++)
     {
       // Pick a random point p as a cluster center.
       auto randomPoint = randomPointGenerator.next();
@@ -74,53 +71,32 @@ void computeSquaredNorms(const blaze::DynamicMatrix<double> &dataPoints, std::ve
 }
 
 std::vector<size_t>
-KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &matrix, const bool usePrecomputeDistances)
+KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &data)
 {
   utils::Random random;
-  size_t n = matrix.rows();
-  size_t d = matrix.columns();
+  size_t n = data.rows();
+  size_t d = data.columns();
   size_t k = this->NumOfClusters;
   utils::StopWatch sw(true);
 
-  blaze::DynamicMatrix<double> pairwiseDist;
-
-  if (usePrecomputeDistances)
-  {
-    // Compute squared pairwise distances between points.
-    printf("Precomputing pairwise squared distances between all points!\n");
-
-    auto M = matrix * blaze::trans(matrix);
-    blaze::DynamicVector<double> diagM(n);
-    diagM = blaze::diagonal(M);
-    blaze::DynamicVector<double> ones(n);
-    ones = 1;
-    auto h = diagM * blaze::trans(ones);
-    pairwiseDist = h + blaze::trans(h) - 2 * M;
-  }
-
   std::vector<double> dataSquaredNorms;
   dataSquaredNorms.resize(n);
-  computeSquaredNorms(matrix, dataSquaredNorms);
+  computeSquaredNorms(data, dataSquaredNorms);
 
   // Lambda function computes the squared L2 distance between any pair of points.
   // The function will automatically use any precomputed distance if it exists.
-  auto calcSquaredL2Norm = [&matrix, &dataSquaredNorms, d, &pairwiseDist, usePrecomputeDistances](size_t p1, size_t p2) -> double
+  auto calcSquaredL2Norm = [&data, &dataSquaredNorms, d](size_t p1, size_t p2) -> double
   {
     if (p1 == p2)
     {
       return 0.0;
     }
 
-    if (usePrecomputeDistances)
-    {
-      return pairwiseDist.at(p1, p2);
-    }
-
     double dotProd = 0.0, val1 = 0.0, val2 = 0.0;
     for (size_t i = 0; i < d; i++)
     {
-      val1 = matrix.at(p1, i);
-      val2 = matrix.at(p2, i);
+      val1 = data.at(p1, i);
+      val2 = data.at(p2, i);
       if (val1 != 0.0 && val2 != 0.0) // Only compute for non-zero
       {
         dotProd += val1 * val2;
