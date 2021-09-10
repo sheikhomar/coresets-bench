@@ -67,7 +67,7 @@ void writeDoneFile(const std::string &outputDir)
 void outputResultsToFile(const std::shared_ptr<blaze::DynamicMatrix<double>> originalDataPoints, const std::shared_ptr<coresets::Coreset> coreset, const std::string &outputDir)
 {
   std::string outputFilePath = outputDir + "/results.txt.gz";
-  printf("Write results to %s...\n", outputFilePath.c_str());
+  std::cout << "Writing coreset to " << outputFilePath << std::endl;
 
   namespace io = boost::iostreams;
   std::ofstream fileStream(outputFilePath, std::ios_base::out | std::ios_base::binary);
@@ -79,7 +79,7 @@ void outputResultsToFile(const std::shared_ptr<blaze::DynamicMatrix<double>> ori
   coreset->writeToStream(*originalDataPoints, outData);
 }
 
-int main(int argc, char **argv)
+int main_new(int argc, char **argv)
 {
   if (argc < 8)
   {
@@ -169,17 +169,17 @@ int main(int argc, char **argv)
 
     if (useLowDimDataset)
     {
-      std::cout << "Parsing low-dimensional data:\n";
+      std::cout << "Parsing low-dimensional data:" << std::endl;
       data::CsvParser csvParser;
       data = csvParser.parse(lowDimDataFilePath);
     }
     else 
     {
-      std::cout << "Parsing data:\n";
+      std::cout << "Parsing data:" << std::endl;
       data = dataParser->parse(dataFilePath);
     }
 
-    std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << ".\n";
+    std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << std::endl;
   }
 
   std::cout << "Begin coreset algorithm: " << algorithmName << "\n";
@@ -189,6 +189,11 @@ int main(int argc, char **argv)
   if (algorithmName == "basic-clustering")
   {
     coresets::BasicClustering algo(m);
+    coreset = algo.run(*data);
+  }
+  else if (algorithmName == "stream-km++")
+  {
+    coresets::StreamKMeans algo(m);
     coreset = algo.run(*data);
   }
   else if (algorithmName == "sensitivity-sampling")
@@ -210,7 +215,7 @@ int main(int argc, char **argv)
     return -1;
   }
   
-  std::cout << "Algorithm completed in " << timeCoresetComputation.elapsedStr() << "\n";
+  std::cout << "Algorithm completed in " << timeCoresetComputation.elapsedStr() << std::endl;
 
   // if (useLowDimDataset)
   // {

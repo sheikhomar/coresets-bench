@@ -13,17 +13,17 @@ StreamKMeans::run(const blaze::DynamicMatrix<double> &data)
 
     // Run k-Means++ where k=T where T is the number of points to be included in the coreset
     clustering::KMeans kMeansAlg(TargetSamplesInCoreset);
+    auto clusters = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data);
 
-    auto result = kMeansAlg.run(data);
-
-    auto clusterAssignments = result->getClusterAssignments();
-
-    for (size_t c = 0; c < clusterAssignments.getNumberOfClusters(); c++)
+    auto clusterIndicies = *clusters->getClusterIndices();
+    for (auto &&clusterIndex : clusterIndicies)
     {
-        size_t nPointsInCluster = clusterAssignments.countPointsInCluster(c);
+        size_t nPointsInCluster = clusters->countPointsInCluster(clusterIndex);
         double weight = static_cast<double>(nPointsInCluster);
-        coreset->addCenter(c, weight);
+        coreset->addPoint(clusterIndex, weight);
     }
-    
+
+    coreset->setClusterAssignments(*clusters);
+
     return coreset;
 }
