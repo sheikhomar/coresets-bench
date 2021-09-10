@@ -15,6 +15,7 @@ set(headers
     include/data/covertype_parser.hpp
     include/data/data_parser.hpp
     include/data/tower_parser.hpp
+    include/utils/distances.hpp
     include/utils/random.hpp
     include/utils/stop_watch.hpp
 )

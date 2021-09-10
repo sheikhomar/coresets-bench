@@ -11,23 +11,6 @@
 
 namespace utils
 {
-    void computeSquaredL2Norms(const blaze::DynamicMatrix<double> &dataPoints, std::vector<double> &squaredNorms)
-    {
-        double val = 0.0;
-        for (size_t i = 0; i < dataPoints.rows(); i++)
-        {
-            double sumOfSquares = 0.0;
-            for (size_t j = 0; j < dataPoints.columns(); j++)
-            {
-                val = dataPoints.at(i, j);
-                if (val != 0.0)
-                {
-                    sumOfSquares += val * val;
-                }
-            }
-            squaredNorms[i] = sumOfSquares;
-        }
-    }
 
     class L2NormCalculator
     {
@@ -57,6 +40,24 @@ namespace utils
             ySquaredL2Norms = std::make_shared<std::vector<double>>();
             ySquaredL2Norms->resize(y.rows());
             computeSquaredL2Norms(y, *ySquaredL2Norms);
+        }
+
+        void computeSquaredL2Norms(const blaze::DynamicMatrix<double> &dataPoints, std::vector<double> &squaredNorms)
+        {
+            double val = 0.0;
+            for (size_t i = 0; i < dataPoints.rows(); i++)
+            {
+                double sumOfSquares = 0.0;
+                for (size_t j = 0; j < dataPoints.columns(); j++)
+                {
+                    val = dataPoints.at(i, j);
+                    if (val != 0.0)
+                    {
+                        sumOfSquares += val * val;
+                    }
+                }
+                squaredNorms[i] = sumOfSquares;
+            }
         }
 
         double calc(size_t xIndex, size_t yIndex)
