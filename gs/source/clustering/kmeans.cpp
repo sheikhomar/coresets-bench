@@ -13,7 +13,8 @@ KMeans::run(const blaze::DynamicMatrix<double> &data)
 
   if (this->InitKMeansPlusPlus)
   {
-    initialCenters = this->pickInitialCentersViaKMeansPlusPlus(data);
+    auto clusters = this->pickInitialCentersViaKMeansPlusPlus(data);
+    initialCenters = *clusters->getClusterIndices();
   }
   else
   {
@@ -70,7 +71,7 @@ void computeSquaredNorms(const blaze::DynamicMatrix<double> &dataPoints, std::ve
   //std::cout << " Done  in " << sw.elapsedStr() << "\n";
 }
 
-std::vector<size_t>
+std::shared_ptr<clustering::ClusterAssignmentList>
 KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &data)
 {
   utils::Random random;
@@ -80,14 +81,12 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
 
   utils::L2NormCalculator squaredL2Norm(data, true);
 
-  // Track which points are picked as centers.
-  std::vector<size_t> pickedPointsAsCenters;
-  pickedPointsAsCenters.reserve(k);
+  auto clusters = std::make_shared<clustering::ClusterAssignmentList>(n, k);
 
-  blaze::DynamicVector<double> weights(n);
+  blaze::DynamicVector<double> smallestDistances(n);
   for (size_t p1 = 0; p1 < n; p1++)
   {
-    weights[p1] = std::numeric_limits<double>::max();
+    smallestDistances[p1] = std::numeric_limits<double>::max();
   }
 
   size_t centerIndex = 0;
@@ -110,28 +109,39 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
 
         // Compute min_dist^2(p, C_k-1)
         // Decide if current distance is better.
-        if (distance < weights[p1])
+        if (distance < smallestDistances[p1])
         {
           // Set the weight of a given point to be the smallest distance
-          // to any of the previously selected center points. We want to
-          // select points randomly such that points that are far from
-          // any of the selected center points have higher likelihood of
-          // being picked as the next candidate center.
-          weights[p1] = distance;
+          // to any of the previously selected center points. 
+          smallestDistances[p1] = distance;
+          clusters->assign(p1, centerIndex, distance);
         }
       }
 
-      // Pick the index of a point randomly selected based on the weights.
-      centerIndex = random.choice(weights);
+      // Pick the index of a point randomly selected based on the distances.
+      // A point with a large distance is more likely to be picked than one with
+      // a small distance. We want to select points randomly such that points
+      // that are far from any of the selected center points have higher likelihood of
+      // being picked as the next candidate center.
+      centerIndex = random.choice(smallestDistances);
     }
 
     std::cout << "Picked point " << centerIndex << " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << std::endl;
-    pickedPointsAsCenters.push_back(centerIndex);
+  }
+
+  // Final reassignment step.
+  for (size_t p1 = 0; p1 < n; p1++)
+  {
+    double distance = squaredL2Norm.calc(p1, centerIndex);
+    if (distance < smallestDistances[p1])
+    {
+      clusters->assign(p1, centerIndex, distance);
+    }
   }
 
   std::cout << "k-means++ initialization completed in " << sw.elapsedStr() << std::endl;
 
-  return pickedPointsAsCenters;
+  return clusters;
 }
 
 std::shared_ptr<ClusteringResult>

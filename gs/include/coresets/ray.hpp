@@ -126,13 +126,11 @@ namespace coresets
 
             // Compute initial solution S
             clustering::KMeans kMeansAlg(k);
-            auto initialSolution = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data);
-
-            clustering::ClusterAssignmentList clusters(n, k);
-            clusterPoints(data, initialSolution, clusters);
+            auto clusters = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data);
+            auto centerIndicies = *clusters->getClusterIndices();
 
             std::vector<std::shared_ptr<RandomRay>> rays;
-            for (auto &&centerPoint : initialSolution)
+            for (auto &&centerPoint : centerIndicies)
             {
                 std::vector<std::shared_ptr<RandomRay>> clusterRays;
                 std::cout << "Generating random rays for center " << centerPoint << "\n";
@@ -143,7 +141,7 @@ namespace coresets
                     clusterRays.push_back(ray);
                 }
 
-                auto points = clusters.getPointsByCluster(centerPoint);
+                auto points = clusters->getPointsByCluster(centerPoint);
                 std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
 
                 for (auto &&p : *points)
