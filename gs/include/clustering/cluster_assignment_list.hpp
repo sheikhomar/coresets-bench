@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include <set>
 
 #include <blaze/Math.h>
 #include <boost/array.hpp>
@@ -123,6 +124,9 @@ namespace clustering
 
         std::shared_ptr<std::vector<size_t>>
         getPointsByCluster(size_t clusterIndex) const;
+
+        std::shared_ptr<std::vector<size_t>>
+        getClusterIndices() const;
 
     private:
         /**

@@ -208,3 +208,17 @@ ClusterAssignmentList::getPointsByCluster(size_t clusterIndex) const
     }
     return pointsToReturn;
 }
+
+std::shared_ptr<std::vector<size_t>>
+ClusterAssignmentList::getClusterIndices() const
+{
+    auto clusterIndexSet = std::set<size_t>();
+    for (size_t p = 0; p < this->numOfPoints; p++)
+    {
+        clusterIndexSet.insert(clusters[p]);
+    }
+
+    // Convert set to a vector.
+    auto clusterIndices = std::make_shared<std::vector<size_t>>(clusterIndexSet.begin(), clusterIndexSet.end());
+    return clusterIndices;
+}
