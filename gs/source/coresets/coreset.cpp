@@ -89,8 +89,6 @@ void Coreset::writeToStream(const blaze::DynamicMatrix<double> &originalDataPoin
     // Output coreset points
     for (auto &&point : points)
     {
-        std::cout << "Writing " << point->Index << std::endl;
-
         // Output coreset point weight
         out << point->Weight << " ";
 
