@@ -155,6 +155,18 @@ ClusterAssignmentList::getNormalizedCosts() const
     return distances / this->getTotalCost();
 }
 
+size_t
+getIndex(const std::vector<size_t> &values, const size_t valueToSearch)
+{
+    auto it = std::find(values.begin(), values.end(), valueToSearch);
+    if (it != values.end())
+    {
+        return it - values.begin();
+    }
+
+    throw std::logic_error("Value not found.");
+}
+
 void ClusterAssignmentList::calcCenters(const blaze::DynamicMatrix<double> &dataPoints, blaze::DynamicMatrix<double> &newCenters)
 {
     assert(dataPoints.rows() == this->numOfPoints);
@@ -176,9 +188,11 @@ void ClusterAssignmentList::calcCenters(const blaze::DynamicMatrix<double> &data
         clusterMemberCounts[c] = 0;
     }
 
+    auto centerIndices = *this->getClusterIndices();
+
     for (size_t p = 0; p < n; p++)
     {
-        const size_t c = this->clusters[p];
+        const size_t c = getIndex(centerIndices, this->clusters[p]);
 
         // Sum all points assigned in cluster c
         blaze::row(newCenters, c) += blaze::row(dataPoints, p);
