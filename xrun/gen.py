@@ -15,6 +15,7 @@ KNOWN_ALGORITHMS = [
     "sensitivity-sampling",
     "group-sampling",
     "bico",
+    "stream-km++",
 ]
 
 KNOWN_DATASETS = [
@@ -58,6 +59,8 @@ def validate_algorithms(ctx, param, value):
             ret_val.append("group-sampling")
         elif s in ["bico"]:
             ret_val.append("bico")
+        elif s in ["skm", "skm++", "stream-km++"]:
+            ret_val.append("stream-km++")
         else:
             raise Exception(f"Known algorithm: {s}")
     return ret_val
