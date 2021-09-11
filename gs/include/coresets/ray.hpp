@@ -168,11 +168,11 @@ namespace coresets
          * Number of points that the algorithm should aim to include in the coreset: T
          */
         const size_t TargetSamplesInCoreset;
-        const size_t NumberOfRaysPerCluster;
+        const size_t MaxNumberOfRaysPerCluster;
         const size_t NumberOfClusters;
         const double OutputSampleRatio;
 
-        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t numberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), NumberOfRaysPerCluster(numberOfRaysPerCluster), OutputSampleRatio(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
+        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t maxNumberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), MaxNumberOfRaysPerCluster(maxNumberOfRaysPerCluster), OutputSampleRatio(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
         {
         }
 
@@ -238,7 +238,11 @@ namespace coresets
 
                 std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
                 size_t numberOfPointInCluster = points->size();
-                size_t numberOfRays = blaze::ceil(numberOfPointInCluster / (OutputSampleRatio * 2));
+                size_t numberOfRays = std::min(
+                    static_cast<double>(MaxNumberOfRaysPerCluster),
+                    std::ceil(numberOfPointInCluster / (OutputSampleRatio * 2))
+                );
+                
                 auto clusterRays = rayContainer->createRays(numberOfRays, centerPoint);
 
                 for (auto &&p : *points)
