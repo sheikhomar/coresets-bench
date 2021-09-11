@@ -25,47 +25,61 @@ namespace coresets
         const size_t OriginIndex;
         blaze::DynamicVector<double> Direction;
         std::vector<size_t> points;
-        std::vector<double> pointLengths;
+        std::vector<double> lengths;
+        std::vector<double> distances;
+        double DirectionDotProduct;
         
         RandomRay(const size_t originIndex, const size_t dimensions) : OriginIndex(originIndex), Direction(dimensions)
         {
             random.normal(Direction);
             Direction = Direction / blaze::l2Norm(Direction);
+
+            DirectionDotProduct = 0;
+            for (size_t j = 0; j < dimensions; j++)
+            {
+                double rayVector_j = Direction[j];
+                DirectionDotProduct += Direction[j] * Direction[j];
+            }
         }
 
         double
         computeProjectedPointLength(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex)
         {
             const size_t d = data.columns();
-            double rrDotProd = 0.0, rpDotProd = 0.0;
+            double rpDotProd = 0.0;
             for (size_t j = 0; j < d; j++)
             {
-                double rayVector_j = data.at(OriginIndex, j) + Direction[j];
-                rpDotProd += rayVector_j * data.at(otherPointIndex, j);
-                rrDotProd += rayVector_j * rayVector_j;
+                // Change the origin of the other point to the point given by OriginIndex
+                // because the Direction vector has its origin at OriginIndex.
+                auto otherPoint_j = data.at(otherPointIndex, j) - data.at(OriginIndex, j);
+                rpDotProd += otherPoint_j * Direction[j];
             }
-            return rpDotProd / rrDotProd;
+            return rpDotProd / DirectionDotProduct;
         }
 
         double
-        distanceToPoint(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex)
+        distanceToPoint(const blaze::DynamicMatrix<double> &data, const size_t otherPointIndex, const double projectedPointLength)
         {
             const size_t d = data.columns();
-            auto projectedPointLength = computeProjectedPointLength(data, otherPointIndex);
             double dotProd = 0.0;
             for (size_t j = 0; j < d; j++)
             {
-                auto projectedPoint_j = data.at(OriginIndex, j) + projectedPointLength * Direction[j];
-                auto diff = projectedPoint_j - data.at(otherPointIndex, j);
+                // Change the origin of the other point to the point given by OriginIndex
+                // because the Direction vector has its origin at OriginIndex.
+                auto otherPoint_j = data.at(otherPointIndex, j) - data.at(OriginIndex, j);
+
+                auto projectedPoint_j = projectedPointLength * Direction[j];
+                auto diff = projectedPoint_j - otherPoint_j;
                 dotProd += diff * diff;
             }
             return std::sqrt(dotProd);
         }
 
-        void assign(const blaze::DynamicMatrix<double> &data, const size_t pointIndex)
+        void assign(const blaze::DynamicMatrix<double> &data, const size_t pointIndex, const double distance, const double projectedPointLength)
         {
             points.push_back(pointIndex);
-            pointLengths.push_back(computeProjectedPointLength(data, pointIndex));
+            distances.push_back(distance);
+            lengths.push_back(projectedPointLength);
         }
     };
 
@@ -147,29 +161,71 @@ namespace coresets
                 for (auto &&p : *points)
                 {
                     double bestDistance = std::numeric_limits<double>::max();
+                    double bestProjectedLength = std::numeric_limits<double>::max();
                     size_t bestRayIndex = 0;
 
                     for (size_t r = 0; r < clusterRays.size(); r++)
                     {
-                        const double distance = clusterRays[r]->distanceToPoint(data, p);
+                        const double projectedLength = clusterRays[r]->computeProjectedPointLength(data, p);
+                        const double distance = clusterRays[r]->distanceToPoint(data, p, projectedLength);
                         if (distance < bestDistance)
                         {
                             bestDistance = distance;
+                            bestProjectedLength = projectedLength;
                             bestRayIndex = r;
                         }
                     }
 
                     // Assign point to the ray with smallest distance.
-                    clusterRays[bestRayIndex]->assign(data, p);
+                    clusterRays[bestRayIndex]->assign(data, p, bestDistance, bestProjectedLength);
                 }
-            }
-
-            for (auto &&ray : rays)
-            {
-                std::cout <<  "Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
             }
             
             return coreset;
+        }
+
+        void printPython(const std::vector<std::shared_ptr<RandomRay>> rays)
+        {
+            for (auto &&ray : rays)
+            {
+                std::cout << "Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
+                for (size_t i = 0; i < ray->points.size(); i++)
+                {
+                    auto p = ray->points[i];
+                    auto l = ray->lengths[i];
+                    auto d = ray->distances[i];
+                    // std::cout << "  " << p << "  -  l=" << l << "  -  d=" << d << "\n";
+                    printf("   Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
+                }
+            }
+
+            
+            // Print out ray vectors
+            std::cout << "\nrays = np.array([\n";
+            std::cout << "  [\n";
+            size_t lastIndex = rays[0]->OriginIndex;
+
+            for (auto &&ray : rays)
+            {
+                // std::cout << "Processing " << ray->OriginIndex << "\n\n";
+                if (ray->OriginIndex != lastIndex)
+                {
+                    std::cout << "  ],\n";
+                    std::cout << "  [\n";
+                }
+
+                std::cout << "    [";
+                for (size_t j = 0; j < ray->Direction.size(); j++)
+                {
+                    std::cout << ray->Direction[j] << ",";
+                }
+                std::cout << "],\n";
+                
+                lastIndex = ray->OriginIndex;
+            }
+
+            std::cout << "  ]\n";
+            std::cout << ")]\n";
         }
     };
 }
