@@ -3,6 +3,7 @@ set(headers
     include/clustering/clustering_result.hpp
     include/clustering/local_search.hpp
     include/clustering/kmeans.hpp
+    include/clustering/kmeans1d.hpp
     include/coresets/basic.hpp
     include/coresets/coreset.hpp
     include/coresets/group_sampling.hpp
