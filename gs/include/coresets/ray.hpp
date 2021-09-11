@@ -9,6 +9,7 @@
 
 #include <clustering/clustering_result.hpp>
 #include <clustering/kmeans.hpp>
+#include <clustering/kmeans1d.hpp>
 #include <coresets/coreset.hpp>
 #include <utils/random.hpp>
 #include <utils/distances.hpp>
@@ -81,6 +82,12 @@ namespace coresets
             distances.push_back(distance);
             lengths.push_back(projectedPointLength);
         }
+
+        size_t
+        getNumberOfPoints() const
+        {
+            return points.size();
+        }
     };
 
     class RayContainer
@@ -94,7 +101,7 @@ namespace coresets
             
         }
 
-        std::vector<std::shared_ptr<RandomRay>>
+        const std::vector<std::shared_ptr<RandomRay>>&
         createRays(const size_t &numberOfRays, const size_t &centerPoint)
         {
             std::vector<std::shared_ptr<RandomRay>> rays;
@@ -103,7 +110,13 @@ namespace coresets
                 rays.push_back(std::make_shared<RandomRay>(centerPoint, Dimensions));
             }
             clusterRays.emplace(centerPoint, rays);
-            return rays;
+            return clusterRays.at(centerPoint);
+        }
+
+        const std::vector<std::shared_ptr<RandomRay>>&
+        getRays(const size_t &centerPoint)
+        {
+            return clusterRays.at(centerPoint);
         }
 
         void printPython()
@@ -170,9 +183,9 @@ namespace coresets
         const size_t TargetSamplesInCoreset;
         const size_t MaxNumberOfRaysPerCluster;
         const size_t NumberOfClusters;
-        const double OutputSampleRatio;
+        const double TargetPointsFromEachCluster;
 
-        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t maxNumberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), MaxNumberOfRaysPerCluster(maxNumberOfRaysPerCluster), OutputSampleRatio(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
+        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t maxNumberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), MaxNumberOfRaysPerCluster(maxNumberOfRaysPerCluster), TargetPointsFromEachCluster(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
         {
         }
 
@@ -222,6 +235,40 @@ namespace coresets
 
             rayContainer->printPython();
 
+            std::cout << "Computing 1D clustering...\n";
+
+            auto centerIndicies = *clusters->getClusterIndices();
+            for (auto &&centerPoint : centerIndicies)
+            {
+                auto nClusterPoints = static_cast<double>(clusters->countPointsInCluster(centerPoint));
+                auto rays = rayContainer->getRays(centerPoint);
+
+                std::cout << "  Center index " << centerPoint <<  "  N: " << nClusterPoints << "  Target " << TargetPointsFromEachCluster << "\n";
+
+                for (auto &&ray : rays)
+                {
+                    double nRayPoints = static_cast<double>(ray->getNumberOfPoints());
+                    double rayTargetProportion = nRayPoints / nClusterPoints;
+                    double t = rayTargetProportion * TargetPointsFromEachCluster;
+                    size_t n1dClusters = std::ceil(rayTargetProportion * TargetPointsFromEachCluster);
+
+                    std::cout << "   Ray " << ray->OriginIndex << " - nPoints: " << nRayPoints <<  " % " << rayTargetProportion << "  n1Dcluster " << n1dClusters << "   t " << t <<  "\n";
+
+                    if (n1dClusters > 1)
+                    {
+                        size_t n = ray->lengths.size();
+                        std::vector<size_t> clusterLabels(n);
+                        std::vector<double> centers(n1dClusters);
+                        clustering::kmeans1d::cluster(ray->lengths, n1dClusters, clusterLabels.data(), centers.data());
+
+                        for (size_t i = 0; i < n1dClusters; i++)
+                        {
+                            std::cout << "     Center " << i << ": " << centers[i] << std::endl;
+                        }
+                    }
+                }
+            }
+
             return coreset;
         }
 
@@ -240,7 +287,7 @@ namespace coresets
                 size_t numberOfPointInCluster = points->size();
                 size_t numberOfRays = std::min(
                     static_cast<double>(MaxNumberOfRaysPerCluster),
-                    std::ceil(numberOfPointInCluster / (OutputSampleRatio * 2))
+                    std::ceil(numberOfPointInCluster / (TargetPointsFromEachCluster * 2))
                 );
                 
                 auto clusterRays = rayContainer->createRays(numberOfRays, centerPoint);
