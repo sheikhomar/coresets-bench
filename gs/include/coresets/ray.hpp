@@ -83,6 +83,82 @@ namespace coresets
         }
     };
 
+    class RayContainer
+    {
+    private:
+        std::map<size_t, std::vector<std::shared_ptr<RandomRay>>> clusterRays;
+        const size_t Dimensions;
+    public:
+        RayContainer(const size_t &dimensions) : clusterRays(), Dimensions(dimensions)
+        {
+            
+        }
+
+        std::vector<std::shared_ptr<RandomRay>>
+        createRays(const size_t &numberOfRays, const size_t &centerPoint)
+        {
+            std::vector<std::shared_ptr<RandomRay>> rays;
+            for (size_t i = 0; i < numberOfRays; i++)
+            {
+                rays.push_back(std::make_shared<RandomRay>(centerPoint, Dimensions));
+            }
+            clusterRays.emplace(centerPoint, rays);
+            return rays;
+        }
+
+        void printPython()
+        {
+            for (auto element : clusterRays)
+            {
+                auto centerIndex = element.first;
+                auto rays = element.second;
+                
+                std::cout << "Center index " << centerIndex << " - Number rays: " << rays.size() << "\n";
+
+                for (auto &&ray : rays)
+                {
+                    std::cout << "  Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
+                    for (size_t i = 0; i < ray->points.size(); i++)
+                    {
+                        auto p = ray->points[i];
+                        auto l = ray->lengths[i];
+                        auto d = ray->distances[i];
+                        // std::cout << "  " << p << "  -  l=" << l << "  -  d=" << d << "\n";
+                        printf("     Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
+                    }
+                }
+            }
+
+            // Print out ray vectors
+            // std::cout << "\nrays = np.array([\n";
+            // std::cout << "  [\n";
+            // size_t lastIndex = rays[0]->OriginIndex;
+
+            // for (auto &&ray : rays)
+            // {
+            //     // std::cout << "Processing " << ray->OriginIndex << "\n\n";
+            //     if (ray->OriginIndex != lastIndex)
+            //     {
+            //         std::cout << "  ],\n";
+            //         std::cout << "  [\n";
+            //     }
+
+            //     std::cout << "    [";
+            //     for (size_t j = 0; j < ray->Direction.size(); j++)
+            //     {
+            //         std::cout << ray->Direction[j] << ",";
+            //     }
+            //     std::cout << "],\n";
+                
+            //     lastIndex = ray->OriginIndex;
+            // }
+
+            // std::cout << "  ]\n";
+            // std::cout << ")]\n";
+        }
+
+    };
+
     class RayMaker
     {
     private:
@@ -94,8 +170,9 @@ namespace coresets
         const size_t TargetSamplesInCoreset;
         const size_t NumberOfRaysPerCluster;
         const size_t NumberOfClusters;
+        const double OutputSampleRatio;
 
-        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t numberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), NumberOfRaysPerCluster(numberOfRaysPerCluster)
+        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t numberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), NumberOfRaysPerCluster(numberOfRaysPerCluster), OutputSampleRatio(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
         {
         }
 
@@ -141,22 +218,28 @@ namespace coresets
             // Compute initial solution S
             clustering::KMeans kMeansAlg(k);
             auto clusters = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data);
+            auto rayContainer = createRays(data, clusters);
+
+            rayContainer->printPython();
+
+            return coreset;
+        }
+
+        std::shared_ptr<RayContainer>
+        createRays(const blaze::DynamicMatrix<double> &data, std::shared_ptr<clustering::ClusterAssignmentList> clusters)
+        {
+            const size_t d = data.columns();
+            auto rayContainer = std::make_shared<RayContainer>(d);
             auto centerIndicies = *clusters->getClusterIndices();
 
-            std::vector<std::shared_ptr<RandomRay>> rays;
             for (auto &&centerPoint : centerIndicies)
             {
-                std::vector<std::shared_ptr<RandomRay>> clusterRays;
-                std::cout << "Generating random rays for center " << centerPoint << "\n";
-                for (size_t i = 0; i < NumberOfRaysPerCluster; i++)
-                {
-                    auto ray = std::make_shared<RandomRay>(centerPoint, d);
-                    rays.push_back(ray);
-                    clusterRays.push_back(ray);
-                }
-
                 auto points = clusters->getPointsByCluster(centerPoint);
+
                 std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
+                size_t numberOfPointInCluster = points->size();
+                size_t numberOfRays = blaze::ceil(numberOfPointInCluster / (OutputSampleRatio * 2));
+                auto clusterRays = rayContainer->createRays(numberOfRays, centerPoint);
 
                 for (auto &&p : *points)
                 {
@@ -180,52 +263,9 @@ namespace coresets
                     clusterRays[bestRayIndex]->assign(data, p, bestDistance, bestProjectedLength);
                 }
             }
-            
-            return coreset;
+
+            return rayContainer;
         }
 
-        void printPython(const std::vector<std::shared_ptr<RandomRay>> rays)
-        {
-            for (auto &&ray : rays)
-            {
-                std::cout << "Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
-                for (size_t i = 0; i < ray->points.size(); i++)
-                {
-                    auto p = ray->points[i];
-                    auto l = ray->lengths[i];
-                    auto d = ray->distances[i];
-                    // std::cout << "  " << p << "  -  l=" << l << "  -  d=" << d << "\n";
-                    printf("   Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
-                }
-            }
-
-            
-            // Print out ray vectors
-            std::cout << "\nrays = np.array([\n";
-            std::cout << "  [\n";
-            size_t lastIndex = rays[0]->OriginIndex;
-
-            for (auto &&ray : rays)
-            {
-                // std::cout << "Processing " << ray->OriginIndex << "\n\n";
-                if (ray->OriginIndex != lastIndex)
-                {
-                    std::cout << "  ],\n";
-                    std::cout << "  [\n";
-                }
-
-                std::cout << "    [";
-                for (size_t j = 0; j < ray->Direction.size(); j++)
-                {
-                    std::cout << ray->Direction[j] << ",";
-                }
-                std::cout << "],\n";
-                
-                lastIndex = ray->OriginIndex;
-            }
-
-            std::cout << "  ]\n";
-            std::cout << ")]\n";
-        }
     };
 }
