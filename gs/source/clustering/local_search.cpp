@@ -27,7 +27,7 @@ public:
         {
             candidates[i] = points[i];
         }
-        std::reverse(points.begin() + numOfCenters, points.end());
+        std::reverse(points.begin() + static_cast<long int>(numOfCenters), points.end());
         return std::next_permutation(points.begin(), points.end());
     }
 };

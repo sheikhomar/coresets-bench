@@ -161,7 +161,11 @@ getIndex(const std::vector<size_t> &values, const size_t valueToSearch)
     auto it = std::find(values.begin(), values.end(), valueToSearch);
     if (it != values.end())
     {
-        return it - values.begin();
+        auto index = it - values.begin();
+        if (index > 0)
+        {
+            return static_cast<size_t>(index);
+        }
     }
 
     throw std::logic_error("Value not found.");
