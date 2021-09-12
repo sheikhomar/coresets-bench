@@ -227,36 +227,6 @@ namespace coresets
         {
         }
 
-        void
-        clusterPoints(const blaze::DynamicMatrix<double> &data, const std::vector<size_t> centerPoints, clustering::ClusterAssignmentList &clusters)
-        {
-            const size_t n = data.rows();
-            utils::L2NormCalculator l2Norm(data, false);
-
-            for (size_t p = 0; p < n; p++)
-            {
-                double bestDistance = std::numeric_limits<double>::max();
-                size_t bestCluster = 0;
-
-                // Loop through all the clusters.
-                for (auto &&c : centerPoints)
-                {
-                    // Compute the L2 norm between point p and centroid c.
-                    const double distance = l2Norm.calc(p, c);
-
-                    // Decide if current distance is better.
-                    if (distance < bestDistance)
-                    {
-                        bestDistance = distance;
-                        bestCluster = c;
-                    }
-                }
-
-                // Assign cluster to the point p.
-                clusters.assign(p, bestCluster, bestDistance);
-            }
-        }
-
         std::shared_ptr<Coreset>
         run(const blaze::DynamicMatrix<double> &data)
         {
@@ -306,7 +276,7 @@ namespace coresets
                         auto weight = static_cast<double>(pointsInCluster.size());
                         coreset->addCenter(centerCounter, center, weight);
                         centerCounter++;
-                        
+
                         std::cout << "Center: \n" << (*center) << std::endl;
                     }
                 }
