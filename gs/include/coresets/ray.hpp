@@ -259,28 +259,15 @@ namespace coresets
                     size_t n1dClusters = ray->calcNumberOfOneDimensionalClusters(nClusterPoints, TargetPointsFromEachCluster);
                     auto clusteredPoints = ray->performOneDimensionalClustering(n1dClusters);
 
-                    std::cout << "   Ray " << ray->OriginIndex << " - nPoints: " << ray->getNumberOfPoints() << "  n1Dcluster " << n1dClusters << "\n";
+                    std::cout << "   Ray " << ray->OriginIndex << " - nRayPoints: " << ray->getNumberOfPoints() << "  nClusters " << n1dClusters << "\n";
 
                     for (auto &&pair : *clusteredPoints)
                     {
-                        auto clusterIndex = pair.first;
                         auto &pointsInCluster = pair.second;
-
-                        std::cout << "     Cluster " << clusterIndex << " has " << pointsInCluster.size() << " points" << std::endl;
-
-                        for (size_t i = 0; i < pointsInCluster.size(); i++)
-                        {
-                            auto pointIndex = pointsInCluster[i];
-                            std::cout << "        Point " << pointIndex << std::endl;
-                        }
-
                         auto center = calcCenter(data, pointsInCluster);
                         auto weight = static_cast<double>(pointsInCluster.size());
                         coreset->addCenter(centerCounter, center, weight);
                         centerCounter++;
-
-                        std::cout << "Center: \n"
-                                  << (*center) << std::endl;
                     }
                 }
             }
