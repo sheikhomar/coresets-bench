@@ -7,7 +7,13 @@ namespace x3 = boost::spirit::x3;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 CsvParser::parse(const std::string &filePath)
 {
-    printf("Opening input file %s...\n", filePath.c_str());
+    std::cout << "Attempting to parse file " << filePath << std::endl;
+    if (!boost::filesystem::exists(filePath))
+    {
+        std::stringstream errMsg;
+        errMsg << "Unable to parse Covertype data because file " << filePath << " does not exist.";
+        throw std::invalid_argument(errMsg.str());
+    }
 
     std::ifstream fileStream(filePath, std::ios_base::in | std::ios_base::binary);
     io::filtering_streambuf<io::input> filteredInputStream;

@@ -18,6 +18,8 @@
 #include <boost/iostreams/filter/bzip2.hpp>
 #include <boost/spirit/home/x3.hpp>
 #include <boost/spirit/include/support_istream_iterator.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
 #include <data/data_parser.hpp>
 
