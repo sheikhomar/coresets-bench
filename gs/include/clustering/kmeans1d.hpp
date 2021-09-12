@@ -117,11 +117,17 @@ namespace clustering::kmeans1d
         }
 
         double calc(size_t i, size_t j) {
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wconversion"
+
             if (j < i) return 0.0;
-            double mu = (cumsum[j + 1] - cumsum[i]) / (j - i + 1);
+            double mu = (cumsum[j + 1] - cumsum[i]) / (j - i + 1UL);
             double result = cumsum2[j + 1] - cumsum2[i];
-            result += (j - i + 1) * (mu * mu);
+            result += (j - i + 1UL) * (mu * mu);
             result -= (2 * mu) * (cumsum[j + 1] - cumsum[i]);
+
+            #pragma GCC diagnostic pop
+
             return result;
         }
     };
@@ -176,7 +182,7 @@ namespace clustering::kmeans1d
         // * Set D and T using dynamic programming algorithm
         // ***************************************************
 
-        // Algorithm as presented in section 2.2 of (Gronlund et al., 2017).
+        // Algorithm as presented in section 2.2 of (Grønlund et al., 2017).
 
         CostCalculator cost_calculator(sorted_array, n);
         Matrix<double> D(k, n);
@@ -224,8 +230,8 @@ namespace clustering::kmeans1d
             t = T.get(k_, n_);
             double centroid = 0.0;
             for (size_t i = t; i < t_; ++i) {
-                sorted_clusters[i] = k_;
-                centroid += (sorted_array[i] - centroid) / (i - t + 1);
+                sorted_clusters[i] = static_cast<double>(k_);
+                centroid += (sorted_array[i] - centroid) / static_cast<double>(i - t + 1);
             }
             centroids[k_] = centroid;
             k_ -= 1;
