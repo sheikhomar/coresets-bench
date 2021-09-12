@@ -133,10 +133,10 @@ namespace clustering::kmeans1d
         size_t num_cols;
 
     public:
-        Matrix(size_t num_rows, size_t num_cols) {
-            this->num_rows = num_rows;
-            this->num_cols = num_cols;
-            data.resize(num_rows * num_cols);
+        Matrix(size_t nRows, size_t nCols) {
+            this->num_rows = nRows;
+            this->num_cols = nCols;
+            data.resize(nRows * nCols);
         }
 
         inline T get(size_t i, size_t j) {

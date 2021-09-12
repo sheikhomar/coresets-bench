@@ -29,7 +29,7 @@ namespace coresets
         std::vector<double> lengths;
         std::vector<double> distances;
         double DirectionDotProduct;
-        
+
         RandomRay(const size_t originIndex, const size_t dimensions) : OriginIndex(originIndex), Direction(dimensions)
         {
             random.normal(Direction);
@@ -119,7 +119,7 @@ namespace coresets
                 {
                     auto pointIndex = this->points[p];
                     auto clusterLabel = clusterLabels[p];
-                    
+
                     clustersAndPoints->at(clusterLabel).push_back(pointIndex);
                 }
             }
@@ -133,13 +133,13 @@ namespace coresets
     private:
         std::map<size_t, std::vector<std::shared_ptr<RandomRay>>> clusterRays;
         const size_t Dimensions;
+
     public:
         RayContainer(const size_t &dimensions) : clusterRays(), Dimensions(dimensions)
         {
-            
         }
 
-        const std::vector<std::shared_ptr<RandomRay>>&
+        const std::vector<std::shared_ptr<RandomRay>> &
         createRays(const size_t &numberOfRays, const size_t &centerPoint)
         {
             std::vector<std::shared_ptr<RandomRay>> rays;
@@ -151,7 +151,7 @@ namespace coresets
             return clusterRays.at(centerPoint);
         }
 
-        const std::vector<std::shared_ptr<RandomRay>>&
+        const std::vector<std::shared_ptr<RandomRay>> &
         getRays(const size_t &centerPoint)
         {
             return clusterRays.at(centerPoint);
@@ -163,20 +163,19 @@ namespace coresets
             {
                 auto centerIndex = element.first;
                 auto rays = element.second;
-                
+
                 std::cout << "Center index " << centerIndex << " - Number rays: " << rays.size() << "\n";
 
                 for (auto &&ray : rays)
                 {
                     std::cout << "  Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
-                    for (size_t i = 0; i < ray->points.size(); i++)
-                    {
-                        auto p = ray->points[i];
-                        auto l = ray->lengths[i];
-                        auto d = ray->distances[i];
-                        // std::cout << "  " << p << "  -  l=" << l << "  -  d=" << d << "\n";
-                        // printf("     Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
-                    }
+                    // for (size_t i = 0; i < ray->points.size(); i++)
+                    // {
+                    //     auto p = ray->points[i];
+                    //     auto l = ray->lengths[i];
+                    //     auto d = ray->distances[i];
+                    //     printf("     Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
+                    // }
                 }
             }
 
@@ -200,20 +199,20 @@ namespace coresets
             //         std::cout << ray->Direction[j] << ",";
             //     }
             //     std::cout << "],\n";
-                
+
             //     lastIndex = ray->OriginIndex;
             // }
 
             // std::cout << "  ]\n";
             // std::cout << ")]\n";
         }
-
     };
 
     class RayMaker
     {
     private:
         utils::Random random;
+
     public:
         /**
          * Number of points that the algorithm should aim to include in the coreset: T
@@ -223,7 +222,10 @@ namespace coresets
         const size_t NumberOfClusters;
         const double TargetPointsFromEachCluster;
 
-        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t maxNumberOfRaysPerCluster): TargetSamplesInCoreset(targetSamplesInCoreset), NumberOfClusters(k), MaxNumberOfRaysPerCluster(maxNumberOfRaysPerCluster), TargetPointsFromEachCluster(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
+        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t maxNumberOfRaysPerCluster) : TargetSamplesInCoreset(targetSamplesInCoreset),
+                                                                                              MaxNumberOfRaysPerCluster(maxNumberOfRaysPerCluster),
+                                                                                              NumberOfClusters(k),
+                                                                                              TargetPointsFromEachCluster(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
         {
         }
 
@@ -247,10 +249,10 @@ namespace coresets
             size_t centerCounter = 0;
             for (auto &&centerPoint : centerIndicies)
             {
-                auto nClusterPoints = static_cast<double>(clusters->countPointsInCluster(centerPoint));
+                auto nClusterPoints = clusters->countPointsInCluster(centerPoint);
                 auto rays = rayContainer->getRays(centerPoint);
 
-                std::cout << "  Center index " << centerPoint <<  "  N: " << nClusterPoints << "  Target " << TargetPointsFromEachCluster << "\n";
+                std::cout << "  Center index " << centerPoint << "  N: " << nClusterPoints << "  Target " << TargetPointsFromEachCluster << "\n";
 
                 for (auto &&ray : rays)
                 {
@@ -277,7 +279,8 @@ namespace coresets
                         coreset->addCenter(centerCounter, center, weight);
                         centerCounter++;
 
-                        std::cout << "Center: \n" << (*center) << std::endl;
+                        std::cout << "Center: \n"
+                                  << (*center) << std::endl;
                     }
                 }
             }
@@ -298,12 +301,11 @@ namespace coresets
 
                 std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
                 double numberOfPointInCluster = static_cast<double>(points->size());
-                size_t numberOfRays = std::min(
+                double numberOfRays = std::min(
                     static_cast<double>(MaxNumberOfRaysPerCluster),
-                    std::ceil(numberOfPointInCluster / (TargetPointsFromEachCluster * 2))
-                );
-                
-                auto clusterRays = rayContainer->createRays(numberOfRays, centerPoint);
+                    std::ceil(numberOfPointInCluster / (TargetPointsFromEachCluster * 2)));
+                size_t nRays = static_cast<size_t>(numberOfRays);
+                auto clusterRays = rayContainer->createRays(nRays, centerPoint);
 
                 for (auto &&p : *points)
                 {
@@ -351,13 +353,13 @@ namespace coresets
             }
 
             // Divide centers by the number of points in each cluster.
+            double nElements = static_cast<double>(pointIndicies.size());
             for (size_t j = 0; j < d; j++)
             {
-                center->at(j) /= pointIndicies.size();
+                center->at(j) /= nElements;
             }
 
             return center;
         }
-
     };
 }
