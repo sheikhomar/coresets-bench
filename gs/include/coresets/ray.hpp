@@ -335,5 +335,33 @@ namespace coresets
             return rayContainer;
         }
 
+        std::shared_ptr<blaze::DynamicVector<double>>
+        calcCenter(const blaze::DynamicMatrix<double> &data, const std::vector<size_t> &pointIndicies) const
+        {
+            const size_t d = data.columns();
+
+            auto center = std::make_shared<blaze::DynamicVector<double>>();
+            center->resize(d);
+
+            // Reset variables.
+            center->reset();
+
+            for (auto &&pointIndex : pointIndicies)
+            {
+                for (size_t j = 0; j < d; j++)
+                {
+                    center->at(j) += data.at(pointIndex, j);
+                }
+            }
+
+            // Divide centers by the number of points in each cluster.
+            for (size_t j = 0; j < d; j++)
+            {
+                center->at(j) /= pointIndicies.size();
+            }
+
+            return center;
+        }
+
     };
 }
