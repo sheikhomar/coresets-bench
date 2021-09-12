@@ -87,6 +87,45 @@ namespace coresets
         {
             return points.size();
         }
+
+        size_t
+        calcNumberOfOneDimensionalClusters(size_t nClusterPoints, double targetPointsFromEachCluster) const
+        {
+            size_t nRayPoints = points.size();
+            double rayTargetProportion = static_cast<double>(nRayPoints) / static_cast<double>(nClusterPoints);
+            double n1dClusters = std::ceil(rayTargetProportion * targetPointsFromEachCluster);
+            return static_cast<size_t>(n1dClusters);
+        }
+
+        std::shared_ptr<std::map<size_t, std::vector<size_t>>>
+        performOneDimensionalClustering(size_t numberOfClusters) const
+        {
+            auto clustersAndPoints = std::make_shared<std::map<size_t, std::vector<size_t>>>();
+            size_t nRayPoints = points.size();
+
+            if (numberOfClusters > 1)
+            {
+                std::vector<size_t> clusterLabels(nRayPoints);
+                std::vector<double> centers(numberOfClusters);
+                clustering::kmeans1d::cluster(this->lengths, numberOfClusters, clusterLabels.data(), centers.data());
+
+                for (size_t c = 0; c < numberOfClusters; c++)
+                {
+                    std::vector<size_t> clusterPoints;
+                    clustersAndPoints->emplace(c, clusterPoints);
+                }
+
+                for (size_t p = 0; p < nRayPoints; p++)
+                {
+                    auto pointIndex = this->points[p];
+                    auto clusterLabel = clusterLabels[p];
+                    
+                    clustersAndPoints->at(clusterLabel).push_back(pointIndex);
+                }
+            }
+
+            return clustersAndPoints;
+        }
     };
 
     class RayContainer
@@ -235,6 +274,7 @@ namespace coresets
             std::cout << "Computing 1D clustering...\n";
 
             auto centerIndicies = *clusters->getClusterIndices();
+            size_t centerCounter = 0;
             for (auto &&centerPoint : centerIndicies)
             {
                 auto nClusterPoints = static_cast<double>(clusters->countPointsInCluster(centerPoint));
@@ -244,44 +284,30 @@ namespace coresets
 
                 for (auto &&ray : rays)
                 {
-                    size_t nRayPoints = ray->getNumberOfPoints();
-                    double rayTargetProportion = static_cast<double>(nRayPoints) / nClusterPoints;
-                    double t = rayTargetProportion * TargetPointsFromEachCluster;
-                    size_t n1dClusters = std::ceil(rayTargetProportion * TargetPointsFromEachCluster);
+                    size_t n1dClusters = ray->calcNumberOfOneDimensionalClusters(nClusterPoints, TargetPointsFromEachCluster);
+                    auto clusteredPoints = ray->performOneDimensionalClustering(n1dClusters);
 
-                    std::cout << "   Ray " << ray->OriginIndex << " - nPoints: " << nRayPoints <<  " % " << rayTargetProportion << "  n1Dcluster " << n1dClusters << "   t " << t <<  "\n";
+                    std::cout << "   Ray " << ray->OriginIndex << " - nPoints: " << ray->getNumberOfPoints() << "  n1Dcluster " << n1dClusters << "\n";
 
-                    if (n1dClusters > 1)
+                    for (auto &&pair : *clusteredPoints)
                     {
-                        std::vector<size_t> clusterLabels(nRayPoints);
-                        std::vector<double> centers(n1dClusters);
-                        clustering::kmeans1d::cluster(ray->lengths, n1dClusters, clusterLabels.data(), centers.data());
+                        auto clusterIndex = pair.first;
+                        auto &pointsInCluster = pair.second;
 
-                        std::map<size_t, std::vector<size_t>> clustersAndPoints;
-                        for (size_t c = 0; c < n1dClusters; c++)
+                        std::cout << "     Cluster " << clusterIndex << " has " << pointsInCluster.size() << " points" << std::endl;
+
+                        for (size_t i = 0; i < pointsInCluster.size(); i++)
                         {
-                            std::vector<size_t> clusterPoints;
-                            clustersAndPoints.emplace(c, clusterPoints);
+                            auto pointIndex = pointsInCluster[i];
+                            std::cout << "        Point " << pointIndex << std::endl;
                         }
 
-                        for (size_t p = 0; p < nRayPoints; p++)
-                        {
-                            auto pointIndex = ray->points[p];
-                            auto clusterLabel = clusterLabels[p];
-                            
-                            clustersAndPoints.at(clusterLabel).push_back(pointIndex);
-                        }
-
-                        for (size_t c = 0; c < n1dClusters; c++)
-                        {
-                            std::vector<size_t> &clusterPoints = clustersAndPoints.at(c);
-                            std::cout << "     Cluster " << c << " with center " << centers[c] << " has " << clusterPoints.size() << " points" << std::endl;
-                            for (size_t i = 0; i < clusterPoints.size(); i++)
-                            {
-                                auto pointIndex = clusterPoints[i];
-                                std::cout << "        Point " << pointIndex << std::endl;
-                            }
-                        }
+                        auto center = calcCenter(data, pointsInCluster);
+                        auto weight = static_cast<double>(pointsInCluster.size());
+                        coreset->addCenter(centerCounter, center, weight);
+                        centerCounter++;
+                        
+                        std::cout << "Center: \n" << (*center) << std::endl;
                     }
                 }
             }
