@@ -2,8 +2,8 @@ sudo apt-get update
 
 # Install libraries
 sudo apt-get install -y build-essential libblas-dev liblapack-dev libssl-dev g++ python-dev autotools-dev libicu-dev libbz2-dev libboost-all-dev checkinstall libreadline-dev
-sudo apt-get install -y python-setuptools
 sudo apt-get install -y libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev wget curl llvm libncurses5-dev xz-utils tk-dev liblzma-dev python-openssl libreadline-dev unixodbc-dev
+sudo apt-get install -y python-setuptools ninja-build
 
 cd ~
 mkdir temp
