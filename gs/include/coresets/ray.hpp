@@ -38,7 +38,6 @@ namespace coresets
             DirectionDotProduct = 0;
             for (size_t j = 0; j < dimensions; j++)
             {
-                double rayVector_j = Direction[j];
                 DirectionDotProduct += Direction[j] * Direction[j];
             }
         }
@@ -137,7 +136,7 @@ namespace coresets
                         auto l = ray->lengths[i];
                         auto d = ray->distances[i];
                         // std::cout << "  " << p << "  -  l=" << l << "  -  d=" << d << "\n";
-                        printf("     Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
+                        // printf("     Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
                     }
                 }
             }
@@ -224,8 +223,6 @@ namespace coresets
         {
             auto coreset = std::make_shared<Coreset>(TargetSamplesInCoreset);
 
-            const size_t n = data.rows();
-            const size_t d = data.columns();
             const size_t k = NumberOfClusters;
 
             // Compute initial solution S
@@ -247,8 +244,8 @@ namespace coresets
 
                 for (auto &&ray : rays)
                 {
-                    double nRayPoints = static_cast<double>(ray->getNumberOfPoints());
-                    double rayTargetProportion = nRayPoints / nClusterPoints;
+                    size_t nRayPoints = ray->getNumberOfPoints();
+                    double rayTargetProportion = static_cast<double>(nRayPoints) / nClusterPoints;
                     double t = rayTargetProportion * TargetPointsFromEachCluster;
                     size_t n1dClusters = std::ceil(rayTargetProportion * TargetPointsFromEachCluster);
 
@@ -256,14 +253,34 @@ namespace coresets
 
                     if (n1dClusters > 1)
                     {
-                        size_t n = ray->lengths.size();
-                        std::vector<size_t> clusterLabels(n);
+                        std::vector<size_t> clusterLabels(nRayPoints);
                         std::vector<double> centers(n1dClusters);
                         clustering::kmeans1d::cluster(ray->lengths, n1dClusters, clusterLabels.data(), centers.data());
 
-                        for (size_t i = 0; i < n1dClusters; i++)
+                        std::map<size_t, std::vector<size_t>> clustersAndPoints;
+                        for (size_t c = 0; c < n1dClusters; c++)
                         {
-                            std::cout << "     Center " << i << ": " << centers[i] << std::endl;
+                            std::vector<size_t> clusterPoints;
+                            clustersAndPoints.emplace(c, clusterPoints);
+                        }
+
+                        for (size_t p = 0; p < nRayPoints; p++)
+                        {
+                            auto pointIndex = ray->points[p];
+                            auto clusterLabel = clusterLabels[p];
+                            
+                            clustersAndPoints.at(clusterLabel).push_back(pointIndex);
+                        }
+
+                        for (size_t c = 0; c < n1dClusters; c++)
+                        {
+                            std::vector<size_t> &clusterPoints = clustersAndPoints.at(c);
+                            std::cout << "     Cluster " << c << " with center " << centers[c] << " has " << clusterPoints.size() << " points" << std::endl;
+                            for (size_t i = 0; i < clusterPoints.size(); i++)
+                            {
+                                auto pointIndex = clusterPoints[i];
+                                std::cout << "        Point " << pointIndex << std::endl;
+                            }
                         }
                     }
                 }
@@ -284,7 +301,7 @@ namespace coresets
                 auto points = clusters->getPointsByCluster(centerPoint);
 
                 std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
-                size_t numberOfPointInCluster = points->size();
+                double numberOfPointInCluster = static_cast<double>(points->size());
                 size_t numberOfRays = std::min(
                     static_cast<double>(MaxNumberOfRaysPerCluster),
                     std::ceil(numberOfPointInCluster / (TargetPointsFromEachCluster * 2))
