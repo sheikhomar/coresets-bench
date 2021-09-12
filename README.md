@@ -31,7 +31,9 @@ make -C kmeans
 The GS project can be built with CMake:
 
 ```bash
-cmake -S gs -B gs/build
+sudo apt-get update
+sudo apt-get install -y ninja-build
+cmake -S gs -B gs/build -G "Ninja"
 cmake --build gs/build
 ```
 
