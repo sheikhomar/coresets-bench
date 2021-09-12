@@ -217,8 +217,10 @@ ClusterAssignmentList::calcCenter(const blaze::DynamicMatrix<double> &dataPoints
     const size_t k = this->numOfClusters;
 
     auto center = std::make_shared<blaze::DynamicVector<double>>();
+    center->resize(d);
 
-    // Reset variables.
+    // Reset variables
+    center->reset();
     size_t memberCount = 0;
 
     for (size_t p = 0; p < n; p++)
