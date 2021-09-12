@@ -46,12 +46,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE -llapack)
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
-# Include a subproject
-add_subdirectory(libs/Ckmeans.1d.dp)
-
-# Define an include path for Ckmeans.1d.dp
-target_include_directories(${PROJECT_NAME}
-    PUBLIC ${CMAKE_CURRENT_LIST_DIR}/libs/Ckmeans.1d.dp/src)
-
-# Define the dependency between the current main project `gs` and the subproject `Ckmeans.1d.dp`.
-target_link_libraries(${PROJECT_NAME} PRIVATE Ckmeans_1d_dp)
+add_compile_options(
+  "-Wall" "-Wpedantic" "-Wextra" "-fexceptions"
+  "$<$<CONFIG:Debug>:-O0;-g3;-ggdb>"
+)
