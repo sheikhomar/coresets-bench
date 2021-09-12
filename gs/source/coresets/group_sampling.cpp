@@ -2,11 +2,12 @@
 
 using namespace coresets;
 
-GroupSampling::GroupSampling(size_t numberOfClusters, size_t targetSamplesInCoreset, size_t beta, size_t groupRangeSize, size_t minimumGroupSamplingSize) : NumberOfClusters(numberOfClusters),
-                                                                                                                                                            TargetSamplesInCoreset(targetSamplesInCoreset),
-                                                                                                                                                            Beta(beta),
-                                                                                                                                                            GroupRangeSize(groupRangeSize),
-                                                                                                                                                            MinimumGroupSamplingSize(minimumGroupSamplingSize)
+GroupSampling::GroupSampling(size_t numberOfClusters, size_t targetSamplesInCoreset, size_t beta, size_t groupRangeSize, size_t minimumGroupSamplingSize) : 
+    MinimumGroupSamplingSize(minimumGroupSamplingSize),
+    Beta(beta),
+    TargetSamplesInCoreset(targetSamplesInCoreset),
+    NumberOfClusters(numberOfClusters),
+    GroupRangeSize(groupRangeSize)
 {
 }
 
@@ -317,7 +318,6 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
 
 void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments, const std::shared_ptr<GroupSet> groups, std::shared_ptr<Coreset> coresetContainer)
 {
-    utils::Random random;
     printf("\n\nSampling from groups...\n");
 
     const size_t minSamplingSize = 1;
@@ -419,7 +419,7 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
         for (size_t i = 0; i < sampledPoints.size(); i++)
         {
             auto sampledPoint = sampledPoints[i];
-            auto weight = groupCost / (numSamplesInt * sampledPoint->Cost);
+            auto weight = groupCost / (numSamplesReal * sampledPoint->Cost);
             coresetContainer->addPoint(sampledPoint->PointIndex, weight);
         }
     }

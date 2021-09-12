@@ -428,7 +428,7 @@ namespace coresets
             {
                 auto point = this->overshotPoints.at(i);
 
-                if (clusterIndex == -1 || (clusterIndex >= 0 && point->ClusterIndex == clusterIndex))
+                if (clusterIndex == -1 || (clusterIndex >= 0 && point->ClusterIndex == static_cast<size_t>(clusterIndex)))
                 {
                     cost += point->PointCost;
                 }
@@ -442,9 +442,9 @@ namespace coresets
          * @param clusterIndex The cluster for which to compute cost.
          */
         double
-        computeCostOfPoints(size_t clusterIndex) const
+        computeCostOfOvershotPoints(size_t clusterIndex) const
         {
-            return computeCostOfPoints(static_cast<int>(clusterIndex));
+            return computeCostOfOvershotPoints(static_cast<int>(clusterIndex));
         }
 
         std::vector<std::shared_ptr<RinglessPoint>>
