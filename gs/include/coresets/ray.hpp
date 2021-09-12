@@ -75,7 +75,7 @@ namespace coresets
             return std::sqrt(dotProd);
         }
 
-        void assign(const blaze::DynamicMatrix<double> &data, const size_t pointIndex, const double distance, const double projectedPointLength)
+        void assign(const size_t pointIndex, const double distance, const double projectedPointLength)
         {
             points.push_back(pointIndex);
             distances.push_back(distance);
@@ -324,7 +324,7 @@ namespace coresets
                     }
 
                     // Assign point to the ray with smallest distance.
-                    clusterRays[bestRayIndex]->assign(data, p, bestDistance, bestProjectedLength);
+                    clusterRays[bestRayIndex]->assign(p, bestDistance, bestProjectedLength);
                 }
             }
 
