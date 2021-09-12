@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <map>
 
 #include <clustering/kmeans.hpp>
 #include <clustering/cluster_assignment_list.hpp>
@@ -24,7 +25,7 @@ namespace coresets
     class Coreset
     {
         std::vector<std::shared_ptr<WeightedPoint>> points;
-        clustering::ClusterAssignmentList clusterAssignments;
+        std::map<size_t, std::shared_ptr<blaze::DynamicVector<double>>> centers;
 
     public:
         /**
@@ -51,7 +52,7 @@ namespace coresets
          * @param clusterIndex The index of the center to add to the coreset.
          * @param weight The weight of the center.
          */
-        void addCenter(size_t clusterIndex, double weight);
+        void addCenter(size_t clusterIndex, std::shared_ptr<blaze::DynamicVector<double>> center, double weight);
 
         /**
          * Returns the coreset point at the given index.
@@ -73,11 +74,6 @@ namespace coresets
          */
         std::shared_ptr<WeightedPoint>
         findPoint(size_t index, bool isCenter = false);
-
-        /**
-         * @brief Sets the cluster assignment.
-         */
-        void setClusterAssignments(const clustering::ClusterAssignmentList &assignments);
 
         /**
          * @brief Write coreset points to the given output stream.

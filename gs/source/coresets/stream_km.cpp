@@ -23,7 +23,5 @@ StreamKMeans::run(const blaze::DynamicMatrix<double> &data)
         coreset->addPoint(clusterIndex, weight);
     }
 
-    coreset->setClusterAssignments(*clusters);
-
     return coreset;
 }

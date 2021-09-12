@@ -15,17 +15,10 @@ GroupSampling::run(const blaze::DynamicMatrix<double> &data)
 {
     clustering::KMeans kMeansAlg(this->NumberOfClusters);
     auto clusters = kMeansAlg.run(data);
-    auto coreset = run(clusters);
-    coreset->setClusterAssignments(clusters->getClusterAssignments());
-    return coreset;
-}
 
-std::shared_ptr<Coreset>
-GroupSampling::run(const std::shared_ptr<clustering::ClusteringResult> result)
-{
     auto coreset = std::make_shared<Coreset>(this->TargetSamplesInCoreset);
 
-    auto clusterAssignments = result->getClusterAssignments();
+    auto clusterAssignments = clusters->getClusterAssignments();
 
     auto rings = this->makeRings(clusterAssignments);
 
@@ -35,12 +28,13 @@ GroupSampling::run(const std::shared_ptr<clustering::ClusteringResult> result)
 
     groupOvershotPoints(clusterAssignments, rings, groups);
 
-    addShortfallPointsToCoreset(clusterAssignments, rings, coreset);
+    addShortfallPointsToCoreset(data, clusterAssignments, rings, coreset);
 
-    addSampledPointsFromGroupsToCoreset(clusterAssignments, groups, coreset);
+    addSampledPointsFromGroupsToCoreset(data, clusterAssignments, groups, coreset);
 
     return coreset;
 }
+
 
 std::shared_ptr<RingSet>
 GroupSampling::makeRings(const clustering::ClusterAssignmentList &clusterAssignments)
@@ -109,7 +103,7 @@ GroupSampling::makeRings(const clustering::ClusterAssignmentList &clusterAssignm
     return rings;
 }
 
-void GroupSampling::addShortfallPointsToCoreset(const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<Coreset> coresetContainer)
+void GroupSampling::addShortfallPointsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<Coreset> coresetContainer)
 {
     printf("\n\nAdding shortfall points to the coreset..\n");
 
@@ -134,8 +128,10 @@ void GroupSampling::addShortfallPointsToCoreset(const clustering::ClusterAssignm
         // The weight of the coreset point for the center of cluster `c`
         double weight = static_cast<double>(nShortfallPoints);
 
+        auto center = clusters.calcCenter(data, c);
+
         // Add center to the coreset.
-        coresetContainer->addCenter(c, weight);
+        coresetContainer->addCenter(c, center, weight);
     }
 }
 
@@ -319,7 +315,7 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
     }
 }
 
-void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::ClusterAssignmentList &clusterAssignments, const std::shared_ptr<GroupSet> groups, std::shared_ptr<Coreset> coresetContainer)
+void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments, const std::shared_ptr<GroupSet> groups, std::shared_ptr<Coreset> coresetContainer)
 {
     utils::Random random;
     printf("\n\nSampling from groups...\n");
@@ -370,7 +366,8 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const clustering::Cluste
                 if (nPointsInCluster > 0)
                 {
                     double weight = static_cast<double>(nPointsInCluster);
-                    coresetContainer->addCenter(c, weight);
+                    auto center = clusterAssignments.calcCenter(data, c);
+                    coresetContainer->addCenter(c, center, weight);
                 }
             }
         }

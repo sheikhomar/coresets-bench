@@ -32,7 +32,7 @@ namespace coresets
         utils::Random random;
 
         std::shared_ptr<Coreset>
-        generateCoresetPoints(const clustering::ClusterAssignmentList &clusterAssignments);
+        generateCoresetPoints(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments);
 
         std::shared_ptr<blaze::DynamicVector<double>>
         calcCenterWeights(const clustering::ClusterAssignmentList &clusterAssignments, std::shared_ptr<blaze::DynamicVector<size_t>> sampledIndices);

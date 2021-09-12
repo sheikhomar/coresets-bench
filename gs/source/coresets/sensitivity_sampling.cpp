@@ -15,15 +15,13 @@ SensitivitySampling::run(const blaze::DynamicMatrix<double> &data)
 
     auto clusterAssignments = result->getClusterAssignments();
 
-    auto coreset = generateCoresetPoints(clusterAssignments);
-
-    coreset->setClusterAssignments(result->getClusterAssignments());
+    auto coreset = generateCoresetPoints(data, clusterAssignments);
 
     return coreset;
 }
 
 std::shared_ptr<Coreset>
-SensitivitySampling::generateCoresetPoints(const clustering::ClusterAssignmentList &clusterAssignments)
+SensitivitySampling::generateCoresetPoints(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments)
 {
     auto coreset = std::make_shared<Coreset>(TargetSamplesInCoreset);
     auto n = clusterAssignments.getNumberOfPoints();
@@ -62,7 +60,8 @@ SensitivitySampling::generateCoresetPoints(const clustering::ClusterAssignmentLi
     for (size_t c = 0; c < numberOfClusters; c++)
     {
         auto weight = (*centerWeights)[c];
-        coreset->addCenter(c, weight);
+        auto center = clusterAssignments.calcCenter(data, c);
+        coreset->addCenter(c, center, weight);
     }
 
     return coreset;

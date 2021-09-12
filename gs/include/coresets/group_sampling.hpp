@@ -496,9 +496,6 @@ namespace coresets
         std::shared_ptr<Coreset>
         run(const blaze::DynamicMatrix<double> &data);
 
-        std::shared_ptr<Coreset>
-        run(const std::shared_ptr<clustering::ClusteringResult> result);
-
     private:
         utils::Random random;
 
@@ -508,7 +505,7 @@ namespace coresets
         /**
          * @brief Add points inside doughnut holes i.e., points that are closest to cluster centers but are not captured by any rings.
          */
-        void addShortfallPointsToCoreset(const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<Coreset> coresetContainer);
+        void addShortfallPointsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<Coreset> coresetContainer);
 
         /**
          * @brief Group overshot points i.e., points that are far from cluster centers and are not captured by any rings.
@@ -520,7 +517,7 @@ namespace coresets
          */
         void groupRingPoints(const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<GroupSet> groups);
 
-        void addSampledPointsFromGroupsToCoreset(const clustering::ClusterAssignmentList &clusterAssignments, const std::shared_ptr<GroupSet> groups, std::shared_ptr<Coreset> coresetContainer);
+        void addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments, const std::shared_ptr<GroupSet> groups, std::shared_ptr<Coreset> coresetContainer);
 
         void printPythonCodeForVisualisation(std::shared_ptr<clustering::ClusteringResult> result, std::shared_ptr<RingSet> rings);
     };

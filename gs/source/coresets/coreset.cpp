@@ -3,7 +3,7 @@
 
 using namespace coresets;
 
-Coreset::Coreset(size_t targetSize) : TargetSize(targetSize), clusterAssignments(0, 0)
+Coreset::Coreset(size_t targetSize) : TargetSize(targetSize)
 {
 }
 
@@ -39,13 +39,14 @@ void Coreset::addPoint(size_t pointIndex, double weight)
     //printf(" point %ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
 }
 
-void Coreset::addCenter(size_t clusterIndex, double weight)
+void Coreset::addCenter(size_t clusterIndex, std::shared_ptr<blaze::DynamicVector<double>> center, double weight)
 {
     auto coresetPoint = findPoint(clusterIndex, true);
     if (coresetPoint == nullptr)
     {
         coresetPoint = std::make_shared<WeightedPoint>(clusterIndex, 0.0, true);
         this->points.push_back(coresetPoint);
+        centers.emplace(clusterIndex, center);
         //printf("            Adding");
     }
     else
@@ -69,11 +70,6 @@ Coreset::size() const
     return this->points.size();
 }
 
-void Coreset::setClusterAssignments(const clustering::ClusterAssignmentList &assignments)
-{
-    this->clusterAssignments = assignments;
-}
-
 void Coreset::writeToStream(const blaze::DynamicMatrix<double> &originalDataPoints, std::ostream &out)
 {
     std::cout << "Write coreset data to a stream." << std::endl;
@@ -94,7 +90,7 @@ void Coreset::writeToStream(const blaze::DynamicMatrix<double> &originalDataPoin
 
         if (point->IsCenter)
         {
-            center = this->clusterAssignments.calcCenter(originalDataPoints, point->Index);
+            center = this->centers.at(point->Index);
         }
 
         // Output coreset point entries.

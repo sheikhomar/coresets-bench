@@ -22,10 +22,9 @@ BasicClustering::run(const blaze::DynamicMatrix<double> &data)
     {
         size_t nPointsInCluster = clusterAssignments.countPointsInCluster(c);
         double weight = static_cast<double>(nPointsInCluster);
-        coreset->addCenter(c, weight);
+        auto center = clusterAssignments.calcCenter(data, c);
+        coreset->addCenter(c, center, weight);
     }
-
-    coreset->setClusterAssignments(clusterAssignments);
 
     return coreset;
 }
