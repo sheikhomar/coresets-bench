@@ -219,7 +219,8 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
 {
     printf("Grouping ring points...\n");
 
-    auto k = static_cast<double>(clusters.getNumberOfClusters());
+    auto k = clusters.getNumberOfClusters();
+    auto kDouble = static_cast<double>(k);
     for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
     {
         double ringCost = rings->calcRingCost(l);
@@ -255,8 +256,8 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
             for (size_t j = 0; j < groups->GroupRangeSize; j++)
             {
                 double jDouble = static_cast<double>(j);
-                double lowerBound = 1 / k * pow(2, -jDouble) * ringCost;
-                double upperBound = 1 / k * pow(2, -jDouble + 1) * ringCost;
+                double lowerBound = 1 / kDouble * pow(2, -jDouble) * ringCost;
+                double upperBound = 1 / kDouble * pow(2, -jDouble + 1) * ringCost;
                 bool shouldAddPointsIntoGroup = false;
 
                 if (j == 0)
@@ -322,6 +323,7 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
 
     const size_t minSamplingSize = 1;
     auto T = coresetContainer->TargetSize;
+    auto TDouble = static_cast<double>(T);
 
     auto totalCost = clusterAssignments.getTotalCost();
     auto k = clusterAssignments.getNumberOfClusters();
@@ -334,6 +336,7 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
 
     // The number of remaining points needed for the coreset.
     size_t T_remaining = T;
+    
 
     // Tracks the groups that we need to sample points from.
     std::vector<size_t> samplingGroupIndices;
@@ -347,7 +350,7 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
         auto groupPoints = group->getPoints();
         auto groupCost = group->calcTotalCost();
         auto normalizedGroupCost = groupCost / totalCost;
-        auto numSamples = T * normalizedGroupCost;
+        auto numSamples = TDouble * normalizedGroupCost;
 
         #ifdef VERBOSE_DEBUG
         printf("\n    Group m=%ld:   |G_m|=%2ld   cost(G_m)=%2.4f   cost(G_m)/cost(A)=%0.4f   T_m=%0.5f \n",
@@ -371,7 +374,7 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
                 }
             }
         }
-        else if (numSamples >= groupPoints.size())
+        else if (numSamples >= static_cast<double>(groupPoints.size()))
         {
             #ifdef VERBOSE_DEBUG
             printf("        Will not sample because T_m >= |G_m|.\n");
@@ -402,7 +405,7 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
         auto groupCost = group->calcTotalCost();
         auto groupPoints = group->getPoints();
         auto normalizedGroupCost = groupCost / samplingGroupTotalCost;
-        auto numSamplesReal = T_remaining * normalizedGroupCost;
+        auto numSamplesReal = static_cast<double>(T_remaining) * normalizedGroupCost;
         auto numSamplesInt = random.stochasticRounding(numSamplesReal);
 
         #ifdef VERBOSE_DEBUG
