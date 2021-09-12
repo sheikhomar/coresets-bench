@@ -2,7 +2,9 @@
 
 using namespace coresets;
 
-SensitivitySampling::SensitivitySampling(size_t numberOfClusters, size_t targetSamplesInCoreset) : NumberOfClusters(numberOfClusters), TargetSamplesInCoreset(targetSamplesInCoreset)
+SensitivitySampling::SensitivitySampling(size_t numberOfClusters, size_t targetSamplesInCoreset) : TargetSamplesInCoreset(targetSamplesInCoreset),
+                                                                                                   NumberOfClusters(numberOfClusters)
+
 {
 }
 
@@ -24,7 +26,6 @@ std::shared_ptr<Coreset>
 SensitivitySampling::generateCoresetPoints(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments)
 {
     auto coreset = std::make_shared<Coreset>(TargetSamplesInCoreset);
-    auto n = clusterAssignments.getNumberOfPoints();
 
     // Step 2b: compute cost(A). Assume it is the sum of all costs.
     auto sumOfCosts = clusterAssignments.getTotalCost();
@@ -37,6 +38,9 @@ SensitivitySampling::generateCoresetPoints(const blaze::DynamicMatrix<double> &d
     //           << (*sampledIndices) << "\n";
 
     std::cout << "Compute weights for sampled points.\n";
+
+    double T = static_cast<double>(TargetSamplesInCoreset);
+
     // Loop through the sampled points and calculate
     // the weight associated with each of these points.
     for (size_t j = 0; j < TargetSamplesInCoreset; j++)
@@ -44,7 +48,7 @@ SensitivitySampling::generateCoresetPoints(const blaze::DynamicMatrix<double> &d
         size_t sampledPointIndex = (*sampledIndices)[j];
 
         // We scale the cost of the sampled point by a factor of T i.e. T * cost(p,A)
-        double scaledCostPofA = TargetSamplesInCoreset * clusterAssignments.getPointCost(sampledPointIndex);
+        double scaledCostPofA = T * clusterAssignments.getPointCost(sampledPointIndex);
 
         // The weight of the sampled point is now: cost(A) / (T*cost(p,A))
         double weight = sumOfCosts / scaledCostPofA;
@@ -79,6 +83,8 @@ SensitivitySampling::calcCenterWeights(
     auto centerWeights = std::make_shared<blaze::DynamicVector<double>>(numberOfClusters);
     centerWeights->reset();
 
+    double T = static_cast<double>(TargetSamplesInCoreset);
+
     // For each of the T sampled points...
     for (auto &&p : *sampledIndices)
     {
@@ -89,7 +95,7 @@ SensitivitySampling::calcCenterWeights(
         double costPOfA = clusterAssignments.getPointCost(p);
 
         // Compute cost(A)/(T*cost(p,A))
-        double weightContributionOfP = sumOfCosts / (TargetSamplesInCoreset * costPOfA);
+        double weightContributionOfP = sumOfCosts / (T * costPOfA);
 
         // printf("Point %3ld contributes %.5f to cluster %ld  ", p, weightContributionOfP, clusterOfPointP);
 

@@ -64,15 +64,17 @@ Random::runWeightedReservoirSampling(const size_t k, blaze::DynamicVector<double
     for (size_t i = 0; i < k; i++)
     {
         (*data)[i] = i;
-        sum = sum + static_cast<double>(weights[i]);
+        sum = sum + weights[i];
     }
+
+    double kDouble = static_cast<double>(k);
 
     for (size_t i = k; i < n; i++)
     {
-        sum = sum + static_cast<double>(weights[i]);
+        sum = sum + weights[i];
 
         // Compute the probability for item i
-        double p_i = static_cast<double>(k * weights[i]) / sum;
+        double p_i = (kDouble * weights[i]) / sum;
 
         // Random value between 0 and 1
         auto q = this->getDouble();

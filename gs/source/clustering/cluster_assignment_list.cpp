@@ -118,7 +118,7 @@ ClusterAssignmentList::calcAverageClusterCosts() const
 
     for (size_t c = 0; c < this->numOfClusters; c++)
     {
-        (*results)[c] /= static_cast<double>(counts[c]);
+        (*results)[c] /= counts[c];
     }
 
     return results;
@@ -214,14 +214,13 @@ ClusterAssignmentList::calcCenter(const blaze::DynamicMatrix<double> &dataPoints
 {
     const size_t n = dataPoints.rows();
     const size_t d = dataPoints.columns();
-    const size_t k = this->numOfClusters;
 
     auto center = std::make_shared<blaze::DynamicVector<double>>();
     center->resize(d);
 
     // Reset variables
     center->reset();
-    size_t memberCount = 0;
+    double memberCount = 0.0;
 
     for (size_t p = 0; p < n; p++)
     {
@@ -234,7 +233,7 @@ ClusterAssignmentList::calcCenter(const blaze::DynamicMatrix<double> &dataPoints
                 center->at(j) += dataPoints.at(p, j);
             }
 
-            memberCount += 1;
+            memberCount += 1.0;
         }
     }
 
