@@ -36,7 +36,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/source
 )
 
-find_package(Boost 1.71.0 REQUIRED COMPONENTS iostreams)
+find_package(Boost 1.71.0 REQUIRED COMPONENTS iostreams filesystem)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${Boost_LIBRARIES})
 

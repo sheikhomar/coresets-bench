@@ -6,7 +6,13 @@ namespace io = boost::iostreams;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 CovertypeParser::parse(const std::string &filePath)
 {
-    printf("Opening input file %s...\n", filePath.c_str());
+    std::cout << "Attempting to parse file " << filePath << std::endl;
+    if (!boost::filesystem::exists(filePath))
+    {
+        std::stringstream errMsg;
+        errMsg << "Unable to parse Covertype data because file " << filePath << " does not exist.";
+        throw std::invalid_argument(errMsg.str());
+    }
 
     std::ifstream fileStream(filePath, std::ios_base::in | std::ios_base::binary);
     io::filtering_streambuf<io::input> filteredInputStream;
@@ -52,6 +58,13 @@ CovertypeParser::parse(const std::string &filePath)
         }
 
         currentRow++;
+    }
+
+    if (currentRow < dataSize)
+    {
+        std::stringstream errMsg;
+        errMsg << "Unexpected number of valid lines in " << filePath << ". Expected " << dataSize << " but read " << currentRow;
+        throw std::length_error(errMsg.str());
     }
 
     return data;
