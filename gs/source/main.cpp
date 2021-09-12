@@ -209,6 +209,12 @@ int main(int argc, char **argv)
     coresets::GroupSampling algo(2*k, m, beta, groupRangeSize, minimumGroupSamplingSize);
     coreset = algo.run(*data);
   }
+  else if (algorithmName == "ray-maker")
+  {
+    size_t maxNumberOfRaysPerCluster = 20;
+    coresets::RayMaker algo(2*k, m, maxNumberOfRaysPerCluster);
+    coreset = algo.run(*data);
+  }
   else 
   {
     std::cout << "Unknown algorithm: " << algorithmName << "\n";
@@ -387,7 +393,7 @@ int main_old() {
   // size_t k = 10; // Number of clusters.
   // size_t T = 200*k; // Number of target points.
   // size_t maxNumberOfRaysPerCluster = 20;
-  // coresets::RayMaker rayMaker(T, k, maxNumberOfRaysPerCluster);
+  // coresets::RayMaker rayMaker(k, T, maxNumberOfRaysPerCluster);
   // auto coreset = rayMaker.run(*parsedData);
 
   // coresets::StreamKMeans algo(100);
@@ -398,7 +404,7 @@ int main_old() {
   size_t k = 3; // Number of clusters.
   size_t T = 20; // Number of target points.
   size_t maxNumberOfRaysPerCluster = 20;
-  coresets::RayMaker rayMaker(T, k, maxNumberOfRaysPerCluster);
+  coresets::RayMaker rayMaker(k, T, maxNumberOfRaysPerCluster);
   auto coreset = rayMaker.run(data);
   
   for (size_t i = 0; i < coreset->size(); i++)

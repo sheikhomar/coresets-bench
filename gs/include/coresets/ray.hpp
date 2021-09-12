@@ -222,7 +222,7 @@ namespace coresets
         const size_t NumberOfClusters;
         const double TargetPointsFromEachCluster;
 
-        RayMaker(size_t targetSamplesInCoreset, size_t k, size_t maxNumberOfRaysPerCluster) : TargetSamplesInCoreset(targetSamplesInCoreset),
+        RayMaker(size_t k, size_t targetSamplesInCoreset, size_t maxNumberOfRaysPerCluster) : TargetSamplesInCoreset(targetSamplesInCoreset),
                                                                                               MaxNumberOfRaysPerCluster(maxNumberOfRaysPerCluster),
                                                                                               NumberOfClusters(k),
                                                                                               TargetPointsFromEachCluster(static_cast<double>(targetSamplesInCoreset) / static_cast<double>(k))
