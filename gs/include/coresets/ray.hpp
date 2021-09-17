@@ -264,10 +264,13 @@ namespace coresets
                     for (auto &&pair : *clusteredPoints)
                     {
                         auto &pointsInCluster = pair.second;
-                        auto center = calcCenter(data, pointsInCluster);
-                        auto weight = static_cast<double>(pointsInCluster.size());
-                        coreset->addCenter(centerCounter, center, weight);
-                        centerCounter++;
+                        if (pointsInCluster.size() > 1)
+                        {
+                            auto center = calcCenter(data, pointsInCluster);
+                            auto weight = static_cast<double>(pointsInCluster.size());
+                            coreset->addCenter(centerCounter, center, weight);
+                            centerCounter++;
+                        }
                     }
                 }
             }
