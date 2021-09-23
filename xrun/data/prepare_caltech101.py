@@ -46,7 +46,7 @@ def extract_sift_features(file_paths: List[Path]) -> None:
     for file_path in tqdm(file_paths):
         img = cv2.imread(str(file_path))
         sift_keypoints, sift_desc = sift_algo.detectAndCompute(img, None)
-        all_descriptors.append(sift_desc.astype(np.int))
+        all_descriptors.append(sift_desc.astype(np.int16))
     combined_arr = np.concatenate(all_descriptors, axis=0)
     print(f"Generated matrix shape: {combined_arr.shape}")
     return combined_arr
