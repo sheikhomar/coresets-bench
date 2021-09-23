@@ -156,6 +156,23 @@ class LowDimensionalDataset(Dataset):
         raise Exception(f"Cannot create {local_file_path}! Run `python -m xrun.data.tsvd -i {original_file_path} -d {k}`")
 
 
+class LocalDataset(Dataset):
+    def __init__(self, name: str, file_path: str, file_size: int) -> None:
+        super().__init__(name)
+        self._file_path = Path(file_path)
+        self._file_size = file_size
+
+    def get_local_file_path(self, k: int) -> Path:
+        return self._file_path
+    
+    def get_file_size(self, k: int) -> int:
+        return self._file_size
+
+    def create_local_file(self, k: int) -> None:
+        local_file_path = self.get_local_file_path(k)
+        raise Exception(f"Cannot create {local_file_path}!")
+
+
 class ExperimentRunner:
     _datasets : Dict[str, Dataset] = {
         "census": ExternalDataset(
@@ -191,6 +208,7 @@ class ExperimentRunner:
         "hardinstanceb1": BenchmarkDataset(beta=1),
         "hardinstanceb15": BenchmarkDataset(beta=1.5),
         "hardinstanceb2": BenchmarkDataset(beta=2),
+        "caltech101": LocalDataset("caltech101", "data/input/caltech101-sift.txt.gz", 100000),
     }
     _datasets["censuslowd"] = LowDimensionalDataset(_datasets["census"])
     _datasets["covertypelowd"] = LowDimensionalDataset(_datasets["covertype"])

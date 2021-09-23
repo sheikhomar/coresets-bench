@@ -152,7 +152,8 @@ int main(int argc, char **argv)
   }
   else if (
     datasetName.find("hardinstance") != std::string::npos ||
-    datasetName.find("lowd") != std::string::npos
+    datasetName.find("lowd") != std::string::npos ||
+    datasetName == "caltech101"
   )
   {
     dataParser = std::make_shared<CsvParser>();

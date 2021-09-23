@@ -431,4 +431,20 @@ public:
     }
 };
 
+class Caltech101Experiment : public CsvDatasetExperiment
+{
+public:
+    Caltech101Experiment()
+    {
+        this->DimSize = 128UL;
+        this->DataSize = 3680458UL;
+        this->LowDimSize = 50UL;
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing Caltech101 dataset.\n");
+    }
+};
+
 #endif

@@ -98,6 +98,10 @@ int main(int argc, char **argv)
     {
         experiment = std::make_shared<CovertypeLowDExperiment>();
     }
+    else if (datasetName == "caltech101")
+    {
+        experiment = std::make_shared<Caltech101Experiment>();
+    }
     else
     {
         std::cout << "Unknown dataset: " << datasetName << "\n";
