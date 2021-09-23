@@ -138,6 +138,7 @@ def load_dataset(input_path: str) -> object:
     loader_fn_map : Dict[str, Callable[[str], object]] = {
         "svd": load_csv_dataset,
         "benchmark": load_csv_dataset,
+        "caltech101": load_csv_dataset,
         "docword": load_bag_of_words_dataset,
         "Tower": load_tower_dataset,
         "USCensus1990": load_census_dataset,
