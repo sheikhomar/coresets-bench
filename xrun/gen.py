@@ -143,7 +143,7 @@ def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datase
         "covertypelowd": [10, 20, 30, 40, 50],
         "enron": [10, 20, 30, 40, 50],
         "tower": [20, 40, 60, 80, 100],
-        "caltech101": [50, 100, 250, 1000],
+        "caltech101": [10, 20, 30, 40, 50],
         "hardinstanceb1": [10, 20, 30, 40],
         "hardinstanceb15": [10, 20, 30, 40],
         "hardinstanceb2": [10, 20, 30, 40],
