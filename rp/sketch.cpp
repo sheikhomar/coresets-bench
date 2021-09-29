@@ -766,6 +766,73 @@ void sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
     //UNPROTECT(1); /* sketch */
 }
 
+
+/* Calculate a Clarkson Woodruff sketch.
+ *
+ * Proper SEXP types must be ensured before calling from R.
+ *  - data: class matrix, storage mode double
+ *  - sketch_rows: scalar integer
+ */
+void sketch_cw_sparse(SparseMatrix &data, size_t sketch_rows, SparseMatrix &sketch)
+{
+    BCH_conf bch;
+    double *s_elt, *d_elt, sgn;
+    int i, h_i, j;
+    size_t s_rows, cols, d_rows;
+    uint_fast64_t rnd, a, b, m;
+
+    // GetRNGstate(); /* init for ruint() */
+    // dim = getAttrib(data, R_DimSymbol);
+    d_rows = data.rows();
+    cols = data.columns();
+    s_rows = sketch_rows;
+    // d_elt = data.data(); // d_elt = REAL(data);
+    /* initialise BCH generator */
+    bch = bch_configure(4);
+    /* initialise LCG generator for fast universal hashing */
+    for (m = 1; ((s_rows - 1) >> m) > 0; m++)
+    {
+        /* s_rows is a power of 2, find the position of the 1-bit ... */
+    }
+    /* ... and generate seeds for the linear congruential generator*/
+    a = lcg_init();
+    b = lcg_init();
+    /* create empty sketch and fill with zero */
+    // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
+    sketch.setSize(s_rows, cols, 0);
+    //s_elt = REAL(sketch);
+    // s_elt = sketch.data();
+    // for (i = 0; i < s_rows * cols; i++)
+    //     s_elt[i] = 0.0;
+    /* project randomly */
+
+    StopWatch sw(true);
+    
+    for (i = 0; i < d_rows; i++)
+    {
+        /* calculate target row by fast universal hashing */
+        rnd = a * i + b;
+        h_i = rnd >> (64 - m);
+        sgn = bch4_gen(i, bch);
+        for (j = 0; j < cols; j++)
+        {
+            /* R matrices are in column major storage */
+            // s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
+
+            double val = sketch.at(h_i, j);
+            val += sgn * data.at(i, j);
+            sketch.set(h_i, j, val);
+        }
+
+        if (i % 1000 == 0)
+        {
+            std::cout << "Completed " << i << " in " << sw.elapsedStr() << std::endl;
+        }
+    }
+    //PutRNGstate();
+    //UNPROTECT(1); /* sketch */
+}
+
 /* Calculate a sketch based on Rademacher transforms
  *
  * Proper SEXP types must be ensured before calling from R.
@@ -1042,7 +1109,91 @@ void parseBoW(const std::string &filePath, Matrix &data, bool transposed = false
     }
 }
 
-void printSquaredDistance(Matrix &data, size_t p1, size_t p2)
+
+void parseSparseBoW(const std::string &filePath, CooSparseMatrix &data)
+{
+    printf("Opening input file %s...\n", filePath.c_str());
+    namespace io = boost::iostreams;
+
+    std::ifstream fileStream(filePath, std::ios_base::in | std::ios_base::binary);
+    io::filtering_streambuf<io::input> filteredInputStream;
+    if (boost::ends_with(filePath, ".gz"))
+    {
+        filteredInputStream.push(io::gzip_decompressor());
+    }
+    filteredInputStream.push(fileStream);
+    std::istream inData(&filteredInputStream);
+
+    // The format of the BoW files is 3 header lines, followed by data triples:
+    // ---
+    // D    -> the number of documents
+    // W    -> the number of words in the vocabulary
+    // NNZ  -> the number of nonzero counts in the bag-of-words
+    // docID wordID count
+    // docID wordID count
+    // ...
+    // docID wordID count
+    // docID wordID count
+    // ---
+
+    std::string line;
+    std::getline(inData, line); // Read line with D
+    auto dataSize = std::stoul(line.c_str());
+    std::getline(inData, line); // Read line with W
+    auto dimSize = std::stoul(line.c_str());
+    std::getline(inData, line); // Skip line with NNZ
+    auto nnz = std::stoul(line.c_str());
+
+    printf("Data size: %ld, vocabulary size: %ld, NNZ: %ld\n", dataSize, dimSize, nnz);
+
+    bool firstDataLine = true;
+    size_t previousDocId = 0, currentRow = 0, docId = 0, wordId = 0;
+    size_t lineNo = 3;
+    double count;
+
+    data.setSize(dataSize, dimSize);
+
+    StopWatch sw(true);
+
+    while (inData.good())
+    {
+        std::getline(inData, line);
+        lineNo++;
+
+        std::vector<std::string> splits;
+        boost::split(splits, line, boost::is_any_of(" "));
+
+        if (splits.size() != 3)
+        {
+            printf("Skipping line no %ld: '%s'.\n", lineNo, line.c_str());
+            continue;
+        }
+
+        docId = std::stoul(splits[0]);
+        wordId = std::stoul(splits[1]) - 1; // Convert to zero-based array indexing
+        count = static_cast<double>(std::stoul(splits[2]));
+
+        if (firstDataLine)
+        {
+            firstDataLine = false;
+            previousDocId = docId;
+        }
+
+        if (previousDocId != docId)
+        {
+            currentRow++;
+        }
+
+        data.add(currentRow, wordId, count);
+
+        previousDocId = docId;
+    }
+
+    std::cout << "Data parsed in " << sw.elapsedStr() << std::endl;
+}
+
+template <typename MatrixType>
+void printSquaredDistance(MatrixType &data, size_t p1, size_t p2)
 {
     size_t D = data.rows();
 
@@ -1057,7 +1208,8 @@ void printSquaredDistance(Matrix &data, size_t p1, size_t p2)
     printf(" %10.2f ", squaredDistance);
 }
 
-void printPairwiseSquaredDistances(Matrix &data, int indices[], size_t numberOfSamples)
+template <typename MatrixType>
+void printPairwiseSquaredDistances(MatrixType &data, int indices[], size_t numberOfSamples)
 {
     auto printLine = [numberOfSamples]()
     {
@@ -1133,11 +1285,11 @@ void testPairwiseSquaredDistances()
     //   10.79       1.13      4.71      1.03    167.61    125.84    155.21      5.99    127.66      0.00
 }
 
-int main()
+void runDense()
 {
     Matrix data, sketch, sketch2;
 
-    parseBoW("data/input/docword.enron.txt.gz", data, true);
+    parseBoW("data/input/docword.enron.txt.gz", data, false);
 
     std::cout << "Data parsing completed!!\n";
 
@@ -1178,6 +1330,51 @@ int main()
     // sketch_srht(data, 1024, sketch);
 
     std::cout << "Sketch generated!\n";
+}
+
+
+void runSparse()
+{
+    SparseMatrix sketch;
+    CooSparseMatrix data;
+
+
+    parseSparseBoW("data/input/docword.enron.txt.gz", data);
+
+    std::cout << "Data parsing completed!!\n";
+
+    size_t N = data.columns();
+    constexpr const size_t nSamples = 10;
+
+    int indices[nSamples];
+
+    // sample_int(nSamples, N, indices);
+    for (size_t i = 0; i < nSamples; i++)
+    {
+        indices[i] = i;
+    }
+
+    printPairwiseSquaredDistances(data, indices, nSamples);
+
+    std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
+
+    // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
+    //sketch_cw_sparse(data, static_cast<size_t>(pow(2, 12)), sketch);
+
+    //std::cout << "Distances of the CW sketch.\n";
+
+    //printPairwiseSquaredDistances(sketch, indices, nSamples);
+
+    std::cout << "Sketch generated!\n";
+}
+
+
+int main()
+{
+    //runDense();
+
+    runSparse();
+
 
     return 0;
 }
