@@ -189,21 +189,10 @@ public:
 
         rowIndexPointers[_nRows] = nnz;
 
-        std::cout << "Index Pointers: \n[";
-
-        for (size_t i = 0; i < _nRows + 1; i++)
-        {
-            std::cout << rowIndexPointers[i] << " | ";
-        }
-        std::cout << "]" << std::endl;
-        
-
         for (size_t nzi = 0; nzi < nnz; nzi++)
         {
             const auto cooRowIndex = cooMatrix.rowIndices()[nzi];
             const auto dest = rowIndexPointers[cooRowIndex];
-
-            std::cout <<"For " << nzi << " -> dest: " << dest<< " " << std::endl;
 
             columnIndices[dest] = cooMatrix.columnIndices()[nzi];
             values[dest] = cooMatrix.values()[nzi];
