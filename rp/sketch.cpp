@@ -360,7 +360,7 @@ public:
 
         std::cout << "Allocing memory for matrix: " << rows << "x" << columns << ".\n";
         size_t totalSize = rows * columns * sizeof(double);
-        this->_entries = reinterpret_cast<double *>(std::malloc(totalSize));
+        this->_entries = reinterpret_cast<double *>(std::calloc(rows * columns, sizeof(double)));
         this->_nRows = rows;
         this->_nColumns = columns;
         this->_totalSize = totalSize;
