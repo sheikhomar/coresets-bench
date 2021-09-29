@@ -766,7 +766,8 @@ void sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
  *  - data: class matrix, storage mode double
  *  - sketch_rows: scalar integer
  */
-void sketch_cw_sparse(SparseMatrix &data, size_t sketch_rows, SparseMatrix &sketch)
+template <typename DataMatrixType, typename SketchMatrixType>
+void sketch_cw_sparse(DataMatrixType &data, size_t sketch_rows, SketchMatrixType &sketch)
 {
     BCH_conf bch;
     double *s_elt, *d_elt, sgn;
@@ -1352,7 +1353,7 @@ void runSparse()
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
     // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
-    //sketch_cw_sparse(data, static_cast<size_t>(pow(2, 12)), sketch);
+    sketch_cw_sparse(csrData, static_cast<size_t>(pow(2, 12)), sketch);
 
     //std::cout << "Distances of the CW sketch.\n";
 
