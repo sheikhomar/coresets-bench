@@ -62,7 +62,7 @@ private:
 public:
     DokSparseMatrix() { }
 
-    void setSize(size_t nRows, size_t nColumns, size_t nonZeros)
+    void setSize(size_t nRows, size_t nColumns)
     {
         _nRows = nRows;
         _nColumns = nColumns;
@@ -92,7 +92,6 @@ public:
         }
 
         return 0.0;
-        
     }
     
     double getValue(size_t rowIndex, size_t columnIndex)
@@ -126,7 +125,7 @@ public:
         _nColumns = nColumns;
     }
 
-    void add(const size_t rowIndex, const size_t columnIndex, double value)
+    void set(const size_t rowIndex, const size_t columnIndex, double value)
     {
         _rowIndices.push_back(rowIndex);
         _columnIndices.push_back(columnIndex);
@@ -813,9 +812,10 @@ void sketch_cw_sparse(DataMatrixType &data, size_t sketch_rows, SketchMatrixType
             /* R matrices are in column major storage */
             // s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
 
-            double val = sketch.at(h_i, j);
-            val += sgn * data.at(i, j);
-            sketch.set(h_i, j, val);
+            auto t = data.at(i, j);
+            // double val = sketch.at(h_i, j);
+            // val += sgn * data.at(i, j);
+            //sketch.set(h_i, j, val);
         }
 
         if (i % 1000 == 0)
@@ -1104,7 +1104,8 @@ void parseBoW(const std::string &filePath, Matrix &data, bool transposed = false
 }
 
 
-void parseSparseBoW(const std::string &filePath, CooSparseMatrix &data)
+template <typename DataMatrixType>
+void parseSparseBoW(const std::string &filePath, DataMatrixType &data)
 {
     printf("Opening input file %s...\n", filePath.c_str());
     namespace io = boost::iostreams;
@@ -1178,7 +1179,7 @@ void parseSparseBoW(const std::string &filePath, CooSparseMatrix &data)
             currentRow++;
         }
 
-        data.add(currentRow, wordId, count);
+        data.set(currentRow, wordId, count);
 
         previousDocId = docId;
     }
@@ -1327,7 +1328,7 @@ void runDense()
 }
 
 
-void runSparse()
+void runSparseCsrMatrix()
 {
     SparseMatrix sketch;
     CooSparseMatrix cooData;
@@ -1363,11 +1364,47 @@ void runSparse()
 }
 
 
+
+void runSparseDokMatrix()
+{
+    SparseMatrix sketch;
+    DokSparseMatrix data;
+
+    parseSparseBoW("data/input/docword.enron.txt.gz", data);
+
+    std::cout << "Data parsing completed!!\n";
+
+    size_t N = data.columns();
+    constexpr const size_t nSamples = 10;
+
+    int indices[nSamples];
+
+    // sample_int(nSamples, N, indices);
+    for (size_t i = 0; i < nSamples; i++)
+    {
+        indices[i] = i;
+    }
+
+    printPairwiseSquaredDistances(data, indices, nSamples);
+
+    std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
+
+    // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
+    sketch_cw_sparse(data, static_cast<size_t>(pow(2, 12)), sketch);
+
+    //std::cout << "Distances of the CW sketch.\n";
+
+    //printPairwiseSquaredDistances(sketch, indices, nSamples);
+
+    std::cout << "Sketch generated!\n";
+}
+
+
 int main()
 {
     //runDense();
 
-    runSparse();
+    runSparseDokMatrix();
 
 
     return 0;
