@@ -236,6 +236,10 @@ public:
 
         return 0.0;
     }
+
+    size_t rows() const { return this->_nRows; }
+    size_t columns() const { return this->_nColumns; }
+    size_t nnz() const { return this->values.size(); }
 };
 
 
@@ -1336,14 +1340,13 @@ void runDense()
 void runSparse()
 {
     SparseMatrix sketch;
-    CooSparseMatrix data;
+    CooSparseMatrix cooData;
 
-
-    parseSparseBoW("data/input/docword.enron.txt.gz", data);
+    parseSparseBoW("data/input/docword.enron.txt.gz", cooData);
 
     std::cout << "Data parsing completed!!\n";
 
-    size_t N = data.columns();
+    size_t N = cooData.columns();
     constexpr const size_t nSamples = 10;
 
     int indices[nSamples];
@@ -1354,7 +1357,8 @@ void runSparse()
         indices[i] = i;
     }
 
-    printPairwiseSquaredDistances(data, indices, nSamples);
+    CsrMatrix csrData(cooData);
+    printPairwiseSquaredDistances(csrData, indices, nSamples);
 
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
