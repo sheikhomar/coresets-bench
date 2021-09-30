@@ -961,7 +961,7 @@ void runDense()
             value = sketch.at(i, j);
             if (value != 0.0)
             {
-                outData << i << " " << j << " " << value << "\n";
+                outData << (i+1) << " " << (j+1) << " " << value << "\n";
             }
         }
         
@@ -1013,7 +1013,7 @@ void runSparseCsrMatrix()
             value = pair.second;
             if (value != 0.0)
             {
-                outData << rowIndex << " " << columnIndex << " " << value << "\n";
+                outData << (rowIndex+1) << " " << (columnIndex+1) << " " << value << "\n";
             }
         }
     }
