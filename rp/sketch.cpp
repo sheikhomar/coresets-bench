@@ -19,6 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <iterator>
 #include <unordered_map>
 
 #include <boost/array.hpp>
@@ -223,6 +224,18 @@ public:
         }
 
         return 0.0;
+    }
+
+    std::pair<
+        std::vector<size_t>::const_iterator, 
+        std::vector<size_t>::const_iterator
+    >
+    getColumnIndicesForRow(size_t rowIndex) const
+    {
+        auto nzStart = rowIndexPointers[rowIndex];
+        auto nzEnd = rowIndexPointers[rowIndex+1];
+
+        return std::make_pair(columnIndices.begin() + nzStart, columnIndices.begin() + nzEnd);
     }
 
     size_t rows() const { return this->_nRows; }
@@ -1330,8 +1343,7 @@ void runDense()
 
 void runSparseCsrMatrix()
 {
-    SparseMatrix sketch;
-    CooSparseMatrix cooData;
+    CooSparseMatrix cooData, sketch;
 
     parseSparseBoW("data/input/docword.enron.txt.gz", cooData);
 
@@ -1363,49 +1375,39 @@ void runSparseCsrMatrix()
     std::cout << "Sketch generated!\n";
 }
 
-
-
-void runSparseDokMatrix()
+void testCooToCsr()
 {
-    SparseMatrix sketch;
-    DokSparseMatrix data;
+    CooSparseMatrix data;
+    data.setSize(7, 5);
+    data.set(0, 0, 8);
+    data.set(0, 2, 2);
+    data.set(1, 2, 5);
+    data.set(4, 2, 7);
+    data.set(4, 3, 1);
+    data.set(4, 4, 2);
+    data.set(6, 3, 9);
 
-    parseSparseBoW("data/input/docword.enron.txt.gz", data);
+    CsrMatrix csrMatrix(data);
 
-    std::cout << "Data parsing completed!!\n";
-
-    size_t N = data.columns();
-    constexpr const size_t nSamples = 10;
-
-    int indices[nSamples];
-
-    // sample_int(nSamples, N, indices);
-    for (size_t i = 0; i < nSamples; i++)
+    size_t columnIndex = 0;
+    for (size_t i = 0; i < 7; i++)
     {
-        indices[i] = i;
+        std::cout << "Column index for row " << i << ": ";
+        auto iterPair = csrMatrix.getColumnIndicesForRow(i);
+        for (auto it = iterPair.first; it != iterPair.second; ++it)
+        {
+            columnIndex = *it;
+            std::cout << columnIndex << "  ";
+        }
+        std::cout << "\n";
     }
-
-    printPairwiseSquaredDistances(data, indices, nSamples);
-
-    std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
-
-    // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
-    sketch_cw_sparse(data, static_cast<size_t>(pow(2, 12)), sketch);
-
-    //std::cout << "Distances of the CW sketch.\n";
-
-    //printPairwiseSquaredDistances(sketch, indices, nSamples);
-
-    std::cout << "Sketch generated!\n";
 }
-
 
 int main()
 {
     //runDense();
 
-    runSparseDokMatrix();
-
+    runSparseCsrMatrix();
 
     return 0;
 }
