@@ -238,6 +238,12 @@ public:
         return std::make_pair(columnIndices.begin() + nzStart, columnIndices.begin() + nzEnd);
     }
 
+    /**
+     * Perform following computation in sparse matrices:
+     * 
+     * for (j = 0; j < cols; j++)
+     *   sketch[otherRow, j] += sign * data[ownRow, j];
+     */
     void rowProductWithSign(const size_t ownRowIndex, const double sign, std::map<size_t, double> &otherRow) const
     {
         auto nzStart = rowIndexPointers[ownRowIndex];
@@ -261,6 +267,19 @@ public:
                 oldValue = searchResult->second;
                 otherRow.at(columnIndex) = oldValue + sign * values[ni];
             }
+        }
+    }
+
+    void printRowValues(size_t rowIndex) const
+    {
+        auto nzStart = rowIndexPointers[rowIndex];
+        auto nzEnd = rowIndexPointers[rowIndex+1];
+
+        std::cout << "Row " << rowIndex << std::endl;
+
+        for (size_t ni = nzStart; ni < nzEnd; ni++)
+        {
+            std::cout << "  Column " << columnIndices[ni] << " = " << values[ni]  << std::endl;
         }
     }
 
@@ -804,66 +823,51 @@ void sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
  *  - data: class matrix, storage mode double
  *  - sketch_rows: scalar integer
  */
-template <typename DataMatrixType, typename SketchMatrixType>
-void sketch_cw_sparse(DataMatrixType &data, size_t sketch_rows, SketchMatrixType &sketch)
+void sketch_cw_sparse(const CsrMatrix &data, size_t sketch_rows, std::vector<std::map<size_t, double>> &sketchData)
 {
     BCH_conf bch;
     double *s_elt, *d_elt, sgn;
     int i, h_i, j;
-    size_t s_rows, cols, d_rows;
+    size_t s_rows, cols, d_rows, columnIndex;
     uint_fast64_t rnd, a, b, m;
 
     // GetRNGstate(); /* init for ruint() */
-    // dim = getAttrib(data, R_DimSymbol);
+
     d_rows = data.rows();
     cols = data.columns();
     s_rows = sketch_rows;
-    // d_elt = data.data(); // d_elt = REAL(data);
+
     /* initialise BCH generator */
     bch = bch_configure(4);
+
     /* initialise LCG generator for fast universal hashing */
     for (m = 1; ((s_rows - 1) >> m) > 0; m++)
     {
         /* s_rows is a power of 2, find the position of the 1-bit ... */
     }
+
     /* ... and generate seeds for the linear congruential generator*/
     a = lcg_init();
     b = lcg_init();
-    /* create empty sketch and fill with zero */
-    // sketch = PROTECT(allocMatrix(REALSXP, s_rows, cols));
-    sketch.setSize(s_rows, cols, 0);
-    //s_elt = REAL(sketch);
-    // s_elt = sketch.data();
-    // for (i = 0; i < s_rows * cols; i++)
-    //     s_elt[i] = 0.0;
-    /* project randomly */
-
-    StopWatch sw(true);
     
+    StopWatch sw(true);
+
+    /* create empty sketch and fill with zero */
+    sketchData.resize(s_rows);
+    
+    /* project randomly */
     for (i = 0; i < d_rows; i++)
     {
         /* calculate target row by fast universal hashing */
         rnd = a * i + b;
         h_i = rnd >> (64 - m);
         sgn = bch4_gen(i, bch);
-        for (j = 0; j < cols; j++)
-        {
-            /* R matrices are in column major storage */
-            // s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
 
-            auto t = data.at(i, j);
-            // double val = sketch.at(h_i, j);
-            // val += sgn * data.at(i, j);
-            //sketch.set(h_i, j, val);
-        }
-
-        if (i % 1000 == 0)
-        {
-            std::cout << "Completed " << i << " in " << sw.elapsedStr() << std::endl;
-        }
+        // Efficient sparse row multiplication
+        data.rowProductWithSign(i, sgn, sketchData[h_i]);
     }
-    //PutRNGstate();
-    //UNPROTECT(1); /* sketch */
+
+    std::cout << "Clarkson Woodruff sketch completed in " << sw.elapsedStr() << std::endl;
 }
 
 /* Calculate a sketch based on Rademacher transforms
@@ -1369,34 +1373,19 @@ void runDense()
 
 void runSparseCsrMatrix()
 {
-    CooSparseMatrix cooData, sketch;
+    CooSparseMatrix cooData;
 
-    parseSparseBoW("data/input/docword.enron.txt.gz", cooData);
+    parseSparseBoW("data/input/docword.nytimes.txt.gz", cooData);
 
     std::cout << "Data parsing completed!!\n";
-
-    size_t N = cooData.columns();
-    constexpr const size_t nSamples = 10;
-
-    int indices[nSamples];
-
-    // sample_int(nSamples, N, indices);
-    for (size_t i = 0; i < nSamples; i++)
-    {
-        indices[i] = i;
-    }
-
-    CsrMatrix csrData(cooData);
-    printPairwiseSquaredDistances(csrData, indices, nSamples);
+    
 
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
-    // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
+    CsrMatrix csrData(cooData);
+    std::vector<std::map<size_t, double>> sketch;
+
     sketch_cw_sparse(csrData, static_cast<size_t>(pow(2, 12)), sketch);
-
-    //std::cout << "Distances of the CW sketch.\n";
-
-    //printPairwiseSquaredDistances(sketch, indices, nSamples);
 
     std::cout << "Sketch generated!\n";
 }
