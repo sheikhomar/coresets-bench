@@ -89,13 +89,7 @@ R_alloc(size_t nElements, size_t typeSize)
     return std::malloc(nElements * typeSize);
 }
 
-// Seeder produces uniformly-distributed unsigned integers with 32 bits of length.
-// The entropy of the random_device may be lower than 32 bits.
-// It is not a good idea to use std::random_device repeatedly as this may
-// deplete the entropy in the system. It relies on system calls which makes it a very slow.
-// Ref: https://diego.assencio.com/?index=6890b8c50169ef45b74db135063c227c
-std::random_device seeder;
-std::mt19937 engine(seeder());
+std::mt19937 engine;
 
 double
 runif(double lower, double upper)
@@ -1022,6 +1016,17 @@ void testCooToCsr()
 
 int main()
 {
+    /*
+    Seeder produces uniformly-distributed unsigned integers with 32 bits of length.
+    The entropy of the random_device may be lower than 32 bits.
+    It is not a good idea to use std::random_device repeatedly as this may
+    deplete the entropy in the system. It relies on system calls which makes it a very slow.
+    Ref: https://diego.assencio.com/?index=6890b8c50169ef45b74db135063c227c
+    */
+    // std::random_device seeder;
+    // engine.seed(seeder());
+    engine.seed(5489UL); // Use fix seed.
+
     //runDense();
 
     runSparseCsrMatrix();
