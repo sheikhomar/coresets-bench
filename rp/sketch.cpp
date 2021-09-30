@@ -405,7 +405,10 @@ void sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
         for (j = 0; j < cols; j++)
         {
             /* R matrices are in column major storage */
-            s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
+            //s_elt[h_i + j * s_rows] += sgn * d_elt[i + j * d_rows];
+
+            // Other parts of the code assume row major storage
+            s_elt[h_i * cols + j] += sgn * d_elt[i * cols + j];
         }
     }
     //PutRNGstate();
