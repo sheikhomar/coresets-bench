@@ -986,34 +986,6 @@ void runSparseCsrMatrix()
     std::cout << "Sketch generated!\n";
 }
 
-void testCooToCsr()
-{
-    CooSparseMatrix data;
-    data.setSize(7, 5);
-    data.set(0, 0, 8);
-    data.set(0, 2, 2);
-    data.set(1, 2, 5);
-    data.set(4, 2, 7);
-    data.set(4, 3, 1);
-    data.set(4, 4, 2);
-    data.set(6, 3, 9);
-
-    CsrMatrix csrMatrix(data);
-
-    size_t columnIndex = 0;
-    for (size_t i = 0; i < 7; i++)
-    {
-        std::cout << "Column index for row " << i << ": ";
-        auto iterPair = csrMatrix.getColumnIndicesForRow(i);
-        for (auto it = iterPair.first; it != iterPair.second; ++it)
-        {
-            columnIndex = *it;
-            std::cout << columnIndex << "  ";
-        }
-        std::cout << "\n";
-    }
-}
-
 int main()
 {
     /*
