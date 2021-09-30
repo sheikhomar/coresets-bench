@@ -921,49 +921,48 @@ void testPairwiseSquaredDistances()
 
 void runDense()
 {
-    Matrix data, sketch, sketch2;
+    Matrix data, sketch;
+
+    std::string datasetName = "enron";
+    std::string inputPath = "data/input/docword."+datasetName+".txt.gz";
+    std::string outputPath = "data/input/sketch-dense-docword."+datasetName+".txt.gz";
 
     parseBoW("data/input/docword.enron.txt.gz", data, false);
-
-    std::cout << "Data parsing completed!!\n";
-
-    size_t N = data.columns();
-    constexpr const size_t nSamples = 10;
-
-    int indices[nSamples];
-
-    // sample_int(nSamples, N, indices);
-    for (size_t i = 0; i < nSamples; i++)
-    {
-        indices[i] = i;
-    }
-
-    printPairwiseSquaredDistances(data, indices, nSamples);
 
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
     // Use Clarkson Woodruff (CW) algoritm reduce number of dimensions.
     sketch_cw(data, static_cast<size_t>(pow(2, 12)), sketch);
 
-    // Clean up.
-    data.deallocate();
-
-    std::cout << "Distances of the CW sketch.\n";
-
-    printPairwiseSquaredDistances(sketch, indices, nSamples);
-
-    std::cout << "Running the Rademacher algorithm...\n";
-
-    // Apply the Rademacher algorithm.
-    sketch_rad(sketch, static_cast<size_t>(pow(2, 6)), sketch2);
-
-    std::cout << "Distances of the RAD sketch.\n";
-
-    printPairwiseSquaredDistances(sketch2, indices, nSamples);
-
-    // sketch_srht(data, 1024, sketch);
-
     std::cout << "Sketch generated!\n";
+
+    std::cout << "Writing sketch to " << outputPath << std::endl;
+    namespace io = boost::iostreams;
+    std::ofstream fileStream(outputPath, std::ios_base::out | std::ios_base::binary);
+    io::filtering_streambuf<io::output> fos;
+    fos.push(io::gzip_compressor(io::gzip_params(io::gzip::best_compression)));
+    fos.push(fileStream);
+    std::ostream outData(&fos);
+
+    auto sketch_size = sketch.rows();
+    outData << sketch_size << "\n";
+    outData << sketch.columns() << "\n";
+    outData << "0\n"; // Number of non-zero values is unknown
+    size_t columnIndex;
+    double value;
+
+    for (size_t i = 0; i < sketch.rows(); i++)
+    {
+        for (size_t j = 0; j < sketch.columns(); j++)
+        {
+            value = sketch.at(i, j);
+            if (value != 0.0)
+            {
+                outData << i << " " << j << " " << value << "\n";
+            }
+        }
+        
+    }
 }
 
 
@@ -1030,9 +1029,9 @@ int main()
     // engine.seed(seeder());
     engine.seed(5489UL); // Use fix seed.
 
-    //runDense();
+    runDense();
 
-    runSparseCsrMatrix();
+    //runSparseCsrMatrix();
 
     return 0;
 }
