@@ -238,6 +238,32 @@ public:
         return std::make_pair(columnIndices.begin() + nzStart, columnIndices.begin() + nzEnd);
     }
 
+    void rowProductWithSign(const size_t ownRowIndex, const double sign, std::map<size_t, double> &otherRow) const
+    {
+        auto nzStart = rowIndexPointers[ownRowIndex];
+        auto nzEnd = rowIndexPointers[ownRowIndex+1];
+        size_t columnIndex = 0;
+        double oldValue = 0.0;
+
+        for (size_t ni = nzStart; ni < nzEnd; ni++)
+        {
+            columnIndex = columnIndices[ni];
+            
+            auto searchResult = otherRow.find(columnIndex);
+            if (searchResult == otherRow.end())
+            {
+                // If column does not exist then create one
+                otherRow.emplace(columnIndex, sign * values[ni]);
+            } 
+            else 
+            {
+                // If column exists then add to it.
+                oldValue = searchResult->second;
+                otherRow.at(columnIndex) = oldValue + sign * values[ni];
+            }
+        }
+    }
+
     size_t rows() const { return this->_nRows; }
     size_t columns() const { return this->_nColumns; }
     size_t nnz() const { return this->values.size(); }
