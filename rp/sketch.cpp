@@ -971,10 +971,13 @@ void runSparseCsrMatrix()
 {
     CooSparseMatrix cooData;
 
-    parseSparseBoW("data/input/docword.nytimes.txt.gz", cooData);
+    std::string datasetName = "enron";
+    std::string inputPath = "data/input/docword."+datasetName+".txt.gz";
+    std::string outputPath = "data/input/sketch-docword."+datasetName+".txt.gz";
+
+    parseSparseBoW(inputPath, cooData);
 
     std::cout << "Data parsing completed!!\n";
-    
 
     std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
 
@@ -984,6 +987,34 @@ void runSparseCsrMatrix()
     sketch_cw_sparse(csrData, static_cast<size_t>(pow(2, 12)), sketch);
 
     std::cout << "Sketch generated!\n";
+
+    std::cout << "Writing sketch to " << outputPath << std::endl;
+    namespace io = boost::iostreams;
+    std::ofstream fileStream(outputPath, std::ios_base::out | std::ios_base::binary);
+    io::filtering_streambuf<io::output> fos;
+    fos.push(io::gzip_compressor(io::gzip_params(io::gzip::best_compression)));
+    fos.push(fileStream);
+    std::ostream outData(&fos);
+
+    auto sketch_size = sketch.size();
+    outData << sketch_size << "\n";
+    outData << cooData.columns() << "\n";
+    outData << "0\n"; // Number of non-zero values is unknown
+    size_t columnIndex;
+    double value;
+
+    for (size_t rowIndex = 0; rowIndex < sketch_size; rowIndex++)
+    {
+        for (auto &&pair : sketch[rowIndex])
+        {
+            columnIndex = pair.first;
+            value = pair.second;
+            if (value != 0.0)
+            {
+                outData << rowIndex << " " << columnIndex << " " << value << "\n";
+            }
+        }
+    }
 }
 
 int main()
