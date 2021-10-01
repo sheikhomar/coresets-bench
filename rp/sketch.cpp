@@ -972,10 +972,10 @@ void runDense()
 void runSparseCsrMatrix()
 {
     CooSparseMatrix cooData;
-
-    std::string datasetName = "enron";
+    size_t sketchSize = static_cast<size_t>(pow(2, 16));
+    std::string datasetName = "nytimes";
     std::string inputPath = "data/input/docword."+datasetName+".txt.gz";
-    std::string outputPath = "data/input/sketch-docword."+datasetName+".txt.gz";
+    std::string outputPath = "data/input/sketch-docword."+datasetName+"."+std::to_string(sketchSize)+".txt.gz";
 
     parseSparseBoW(inputPath, cooData);
 
@@ -986,7 +986,7 @@ void runSparseCsrMatrix()
     CsrMatrix csrData(cooData);
     std::vector<std::map<size_t, double>> sketch;
 
-    sketch_cw_sparse(csrData, static_cast<size_t>(pow(2, 12)), sketch);
+    sketch_cw_sparse(csrData, sketchSize, sketch);
 
     std::cout << "Sketch generated!\n";
 
@@ -1032,9 +1032,9 @@ int main()
     // engine.seed(seeder());
     engine.seed(5489UL); // Use fix seed.
 
-    runDense();
+    // runDense();
 
-    //runSparseCsrMatrix();
+    runSparseCsrMatrix();
 
     return 0;
 }
