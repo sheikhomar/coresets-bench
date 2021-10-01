@@ -17,16 +17,18 @@ def perform_projection(X, target_dim: int):
     start_time = timer()
 
     # U: Unitary matrix having left singular vectors as columns. 
-    # s: The singular values, sorted in descending order.
-    # V: Unitary matrix having right singular vectors as rows.
+    # Sigma: The singular values, sorted in descending order.
+    # VT: Unitary matrix having right singular vectors as rows.
     if issparse(X):
-        U, s, V = sparse_linalg.eigen.svds(A=X, k=target_dim, solver='arpack')
-        
-        # svds sorts the singular values in ascending order, reverse it
-        s = s[::-1]
-        U, V = svd_flip(U[:, ::-1], V[::-1])
+        print(" - Using ARPACK to compute SVD because input matrix is sparse.")
+        U, Sigma, VT = sparse_linalg.eigen.svds(A=X, k=target_dim, solver='arpack')
+
+        # svds sorts the singular values/vectors in ascending order, reverse it
+        Sigma = Sigma[::-1]
+        U, VT = svd_flip(U[:, ::-1], VT[::-1])
     else:
-        U, s, V = linalg.svd(
+        print(" - Using LAPACK to compute SVD because input matrix is dense.")
+        U, Sigma, VT = linalg.svd(
             a=X,
             full_matrices=False,
             overwrite_a=True,
@@ -34,14 +36,14 @@ def perform_projection(X, target_dim: int):
         )
 
     # Only take the k singular vectors corresponding to the largest singular values
-    # by zeroing out the rest of singular values in `s`.
-    s[target_dim:] = 0
+    # by zeroing out the rest of singular values in `Sigma`.
+    Sigma[target_dim:] = 0
 
-    # X_transformed = U*diag(s)*V
-    X_transformed = np.dot(U, np.dot(np.diag(s), V))
+    # X_transformed = U * Sigma * V^T
+    X_transformed = np.dot(U, np.dot(np.diag(Sigma), VT))
 
     end_time = timer()
-    print(f" - Completed {end_time - start_time:.2f} secs")
+    print(f" - Completed {end_time - start_time:.2f} secs. Transformed shape: {X_transformed.shape}.")
 
     return X_transformed
 
