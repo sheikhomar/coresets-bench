@@ -28,7 +28,6 @@
 #include "sketches.h"
 #include "parsers.h"
 
-
 template <typename MatrixType>
 void printSquaredDistance(MatrixType &data, size_t p1, size_t p2)
 {
@@ -127,8 +126,8 @@ void runDense()
     Matrix data, sketch;
 
     std::string datasetName = "enron";
-    std::string inputPath = "data/input/docword."+datasetName+".txt.gz";
-    std::string outputPath = "data/input/sketch-dense-docword."+datasetName+".txt.gz";
+    std::string inputPath = "data/input/docword." + datasetName + ".txt.gz";
+    std::string outputPath = "data/input/sketch-dense-docword." + datasetName + ".txt.gz";
 
     parseBoW("data/input/docword.enron.txt.gz", data, false);
 
@@ -161,21 +160,19 @@ void runDense()
             value = sketch.at(i, j);
             if (value != 0.0)
             {
-                outData << (i+1) << " " << (j+1) << " " << value << "\n";
+                outData << (i + 1) << " " << (j + 1) << " " << value << "\n";
             }
         }
-        
     }
 }
-
 
 void runSparseCsrMatrix()
 {
     CooSparseMatrix cooData;
     size_t sketchSize = static_cast<size_t>(pow(2, 16));
     std::string datasetName = "nytimes";
-    std::string inputPath = "data/input/docword."+datasetName+".txt.gz";
-    std::string outputPath = "data/input/sketch-docword."+datasetName+"."+std::to_string(sketchSize)+".txt.gz";
+    std::string inputPath = "data/input/docword." + datasetName + ".txt.gz";
+    std::string outputPath = "data/input/sketch-docword." + datasetName + "." + std::to_string(sketchSize) + ".txt.gz";
 
     parseSparseBoW(inputPath, cooData);
 
@@ -213,26 +210,65 @@ void runSparseCsrMatrix()
             value = pair.second;
             if (value != 0.0)
             {
-                outData << (rowIndex+1) << " " << (columnIndex+1) << " " << value << "\n";
+                outData << (rowIndex + 1) << " " << (columnIndex + 1) << " " << value << "\n";
             }
         }
     }
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    /*
-    Seeder produces uniformly-distributed unsigned integers with 32 bits of length.
-    The entropy of the random_device may be lower than 32 bits.
-    It is not a good idea to use std::random_device repeatedly as this may
-    deplete the entropy in the system. It relies on system calls which makes it a very slow.
-    Ref: https://diego.assencio.com/?index=6890b8c50169ef45b74db135063c227c
-    */
-    // std::random_device seeder;
-    // engine.seed(seeder());
-    RandomEngine::get().seed(5489UL); // Use fix seed.
+    if (argc < 7)
+    {
+        std::cout << "Usage: algorithm dataset data_path k m seed output_path" << std::endl;
+        std::cout << "  algorithm     = algorithm [cw, cw-rad]" << std::endl;
+        std::cout << "  data_path     = file path to dataset" << std::endl;
+        std::cout << "  sketch_size   = the size of the sketch" << std::endl;
+        std::cout << "  sketch_rows   = 1 = sketch rows, 0 to sketch columns" << std::endl;
+        std::cout << "  seed          = random seed" << std::endl;
+        std::cout << "  output_dir    = path to the results" << std::endl;
+        std::cout << std::endl;
+        std::cout << "6 arguments expected, got " << argc - 1 << ":" << std::endl;
+        for (int i = 1; i < argc; ++i)
+            std::cout << " " << i << ": " << argv[i] << std::endl;
+        return 1;
+    }
 
-    // runDense();
+    std::string algorithmName(argv[1]);
+    std::string dataFilePath(argv[2]);
+    size_t sketchSize = std::stoul(argv[3]);
+    std::string sketchRowsStr(argv[4]);
+    bool sketchRows = "1" == sketchRowsStr;
+    int randomSeed = std::stoi(argv[5]);
+    std::string outputDir(argv[6]);
+
+    boost::algorithm::to_lower(algorithmName);
+    boost::algorithm::trim(algorithmName);
+
+    std::cout << "Running random projections with following parameters:\n";
+    std::cout << " - Algorithm:     " << algorithmName << "\n";
+    std::cout << " - Input path:    " << dataFilePath << "\n";
+    std::cout << " - Sketch size:   " << sketchSize << "\n";
+    std::cout << " - Sketch rows:   " << sketchRows << "\n";
+    std::cout << " - Random Seed:   " << randomSeed << "\n";
+    std::cout << " - Output dir:    " << outputDir << "\n";
+
+    if (randomSeed > 0)
+    {
+        RandomEngine::get().seed(5489UL); // Use fix seed.
+    }
+    else
+    {
+        /*
+        Seeder produces uniformly-distributed unsigned integers with 32 bits of length.
+        The entropy of the random_device may be lower than 32 bits.
+        It is not a good idea to use std::random_device repeatedly as this may
+        deplete the entropy in the system. It relies on system calls which makes it a very slow.
+        Ref: https://diego.assencio.com/?index=6890b8c50169ef45b74db135063c227c
+        */
+        std::random_device seeder;
+        RandomEngine::get().seed(seeder());
+    }
 
     runSparseCsrMatrix();
 
