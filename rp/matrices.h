@@ -103,6 +103,19 @@ public:
         _values.push_back(value);
     }
 
+    void printRowValues(size_t rowIndex) const
+    {
+        std::cout << "Row " << rowIndex << std::endl;
+
+        for (size_t i = 0; i < _rowIndices.size(); i++)
+        {
+            if (_rowIndices[i] == rowIndex)
+            {
+                std::cout << "  Column " << _columnIndices[i] << " = " << _values[i]  << std::endl;
+            }
+        }
+    }
+
     size_t rows() const { return this->_nRows; }
     size_t columns() const { return this->_nColumns; }
     size_t nnz() const { return this->_values.size(); }
