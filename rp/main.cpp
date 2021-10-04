@@ -216,6 +216,24 @@ void runSparseCsrMatrix()
     }
 }
 
+std::vector<size_t>
+parseIntegers(std::string s, std::string delimiter = ",")
+{
+    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+    std::string token;
+    std::vector<size_t> res;
+
+    while ((pos_end = s.find(delimiter, pos_start)) != std::string::npos)
+    {
+        token = s.substr(pos_start, pos_end - pos_start);
+        pos_start = pos_end + delim_len;
+        res.push_back(std::stoul(token));
+    }
+
+    res.push_back(std::stoul(s.substr(pos_start)));
+    return res;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 7)
@@ -223,7 +241,7 @@ int main(int argc, char **argv)
         std::cout << "Usage: algorithm dataset data_path k m seed output_path" << std::endl;
         std::cout << "  algorithm     = algorithm [cw, cw-rad]" << std::endl;
         std::cout << "  data_path     = file path to dataset" << std::endl;
-        std::cout << "  sketch_size   = the size of the sketch" << std::endl;
+        std::cout << "  sketch_sizes  = the size of the sketches" << std::endl;
         std::cout << "  sketch_rows   = 1 = sketch rows, 0 to sketch columns" << std::endl;
         std::cout << "  seed          = random seed" << std::endl;
         std::cout << "  output_dir    = path to the results" << std::endl;
@@ -236,7 +254,9 @@ int main(int argc, char **argv)
 
     std::string algorithmName(argv[1]);
     std::string dataFilePath(argv[2]);
-    size_t sketchSize = std::stoul(argv[3]);
+    std::string sketchSizesStr(argv[3]);
+    std::vector<size_t> sketchSizes = parseIntegers(sketchSizesStr);
+
     std::string sketchRowsStr(argv[4]);
     bool sketchRows = "1" == sketchRowsStr;
     int randomSeed = std::stoi(argv[5]);
@@ -248,7 +268,12 @@ int main(int argc, char **argv)
     std::cout << "Running random projections with following parameters:\n";
     std::cout << " - Algorithm:     " << algorithmName << "\n";
     std::cout << " - Input path:    " << dataFilePath << "\n";
-    std::cout << " - Sketch size:   " << sketchSize << "\n";
+    std::cout << " - Sketch sizes:  ";
+    for (size_t i = 0; i < sketchSizes.size(); i++)
+    {
+        std::cout << (i > 0 ? ", ": "") << sketchSizes[i];
+    }
+    std::cout << "\n";
     std::cout << " - Sketch rows:   " << sketchRows << "\n";
     std::cout << " - Random Seed:   " << randomSeed << "\n";
     std::cout << " - Output dir:    " << outputDir << "\n";
