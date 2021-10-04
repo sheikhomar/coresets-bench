@@ -123,7 +123,7 @@ void parseBoW(const std::string &filePath, DataMatrixType &data, bool transposed
 
 
 template <typename DataMatrixType>
-void parseSparseBoW(const std::string &filePath, DataMatrixType &data)
+void parseSparseBoW(const std::string &filePath, DataMatrixType &data, bool transposed = false)
 {
     printf("Opening input file %s...\n", filePath.c_str());
     namespace io = boost::iostreams;
@@ -164,7 +164,14 @@ void parseSparseBoW(const std::string &filePath, DataMatrixType &data)
     size_t lineNo = 3;
     double count;
 
-    data.setSize(dataSize, dimSize);
+    if (transposed)
+    {
+        data.setSize(dimSize, dataSize);
+    }
+    else
+    {
+        data.setSize(dataSize, dimSize);
+    }
 
     StopWatch sw(true);
 
@@ -197,7 +204,14 @@ void parseSparseBoW(const std::string &filePath, DataMatrixType &data)
             currentRow++;
         }
 
-        data.set(currentRow, wordId, count);
+        if (transposed)
+        {
+            data.set(wordId, currentRow, count);
+        }
+        else
+        {
+            data.set(currentRow, wordId, count);
+        }
 
         previousDocId = docId;
     }
