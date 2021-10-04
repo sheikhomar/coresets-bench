@@ -22,6 +22,7 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
+#include "random_engine.h"
 #include "matrices.h"
 #include "stop_watch.h"
 #include "sketches.h"
@@ -229,7 +230,7 @@ int main()
     */
     // std::random_device seeder;
     // engine.seed(seeder());
-    engine.seed(5489UL); // Use fix seed.
+    RandomEngine::get().seed(5489UL); // Use fix seed.
 
     // runDense();
 

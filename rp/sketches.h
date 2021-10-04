@@ -35,6 +35,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/bzip2.hpp>
 #include "matrices.h"
+#include "random_engine.h"
 #include "stop_watch.h"
 
 
@@ -93,13 +94,11 @@ R_alloc(size_t nElements, size_t typeSize)
     return std::malloc(nElements * typeSize);
 }
 
-std::mt19937 engine;
-
 double
 runif(double lower, double upper)
 {
     std::uniform_real_distribution<double> gen(lower, upper);
-    return gen(engine);
+    return gen(RandomEngine::get());
 }
 
 double
