@@ -144,9 +144,9 @@ public:
         _nRows = cooMatrix.rows();
         _nColumns = cooMatrix.columns();
         const auto nnz = cooMatrix.nnz();
-        rowIndexPointers.reserve(_nRows + 1);
-        values.reserve(nnz);
-        columnIndices.reserve(nnz);
+        rowIndexPointers.resize(_nRows + 1);
+        values.resize(nnz);
+        columnIndices.resize(nnz);
 
         // Reset point index.
         for (size_t i = 0; i < _nRows; i++)
