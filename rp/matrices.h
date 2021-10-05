@@ -410,7 +410,7 @@ public:
         this->_entries[index] = value;
     }
 
-    double at(size_t rowIndex, size_t columnIndex)
+    double at(size_t rowIndex, size_t columnIndex) const
     {
         size_t index = rowIndex * this->_nColumns + columnIndex;
         if (index > this->_totalSize)
