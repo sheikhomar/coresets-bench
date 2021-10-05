@@ -37,6 +37,18 @@ cmake -S gs -B gs/build -G "Ninja"
 cmake --build gs/build
 ```
 
+## Debugging
+
+### Segmentation fault
+
+Use AddressSanitizer (ASAN) to debug segfaults. ASAN can help detect memory errors at runtime.
+
+```bash
+sudo apt install libgcc-9-dev
+g++ -ggdb -std=c++17 -fsanitize=address -std=c++17 -o bin/rp.exe main.cpp
+```
+
+
 ## Running Experiments
 
 ```bash
