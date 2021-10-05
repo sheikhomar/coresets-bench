@@ -216,6 +216,22 @@ void runSparseCsrMatrix()
     }
 }
 
+void toDense(const std::vector<std::map<size_t, double>> &sketch, size_t columns, Matrix &denseMatrix)
+{
+    denseMatrix.allocate(sketch.size(), columns);
+    size_t columnIndex = 0UL;
+    double value = 0.0;
+    for (size_t rowIndex = 0; rowIndex < sketch.size(); rowIndex++)
+    {
+        for (auto &&pair : sketch[rowIndex])
+        {
+            columnIndex = pair.first;
+            value = pair.second;
+            denseMatrix.set(rowIndex, columnIndex, value);
+        }
+    }
+}
+
 std::vector<size_t>
 parseIntegers(std::string s, std::string delimiter = ",")
 {
