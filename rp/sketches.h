@@ -428,15 +428,11 @@ void sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
 void sketch_cw_sparse(const CsrMatrix &data, size_t sketch_rows, std::vector<std::map<size_t, double>> &sketchData)
 {
     BCH_conf bch;
-    double *s_elt, *d_elt, sgn;
-    size_t i, h_i, j;
-    size_t s_rows, cols, d_rows;
+    double sgn;
+    size_t i, h_i, s_rows, d_rows;
     uint_fast64_t rnd, a, b, m;
 
-    // GetRNGstate(); /* init for ruint() */
-
     d_rows = data.rows();
-    cols = data.columns();
     s_rows = sketch_rows;
 
     /* initialise BCH generator */

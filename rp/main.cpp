@@ -150,7 +150,6 @@ void runDense()
     outData << sketch_size << "\n";
     outData << sketch.columns() << "\n";
     outData << "0\n"; // Number of non-zero values is unknown
-    size_t columnIndex;
     double value;
 
     for (size_t i = 0; i < sketch.rows(); i++)
