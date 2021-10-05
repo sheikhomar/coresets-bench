@@ -232,6 +232,73 @@ void toDense(const std::vector<std::map<size_t, double>> &sketch, size_t columns
     }
 }
 
+void writeCsv(const Matrix &data, std::string &outputPath, bool transposed)
+{
+    std::cout << "Writing sketch to " << outputPath << std::endl;
+    namespace io = boost::iostreams;
+    std::ofstream fileStream(outputPath, std::ios_base::out | std::ios_base::binary);
+    io::filtering_streambuf<io::output> fos;
+    fos.push(io::gzip_compressor(io::gzip_params(io::gzip::best_compression)));
+    fos.push(fileStream);
+    std::ostream outData(&fos);
+
+    size_t dim1Size = transposed ? data.columns() : data.rows();
+    size_t dim2Size = transposed ? data.rows() : data.columns();
+
+    for (size_t i = 0; i < dim1Size; i++)
+    {
+        for (size_t j = 0; j < dim2Size; j++)
+        {
+            outData << (j > 0 ? ",": "");
+            outData << (transposed ? data.at(j, i) : data.at(i, j));
+        }
+        outData << std::endl;
+    }
+}
+
+void reduceDimensions(std::string &inputPath, std::vector<size_t> sketchSizes, std::string &outputPath)
+{
+    if (sketchSizes.size() != 2)
+    {
+        throw std::out_of_range("Dimensionality reduction requires 2 sketch sizes.");
+    }
+
+    size_t cwSketchSize = sketchSizes[0];
+    size_t radSketchSize = sketchSizes[1];
+
+    CooSparseMatrix cooData;
+    parseSparseBoW(inputPath, cooData, true);
+    std::cout << "Data parsing completed! ";
+    std::cout << "COO matrix ";
+    std::cout << " rows:" << cooData.rows();
+    std::cout << " columns=" << cooData.columns();
+    std::cout << " nnz=" << cooData.nnz() << "\n";
+
+    CsrMatrix csrData(cooData);
+    std::cout << "Converted to CSR matrix:";
+    std::cout << " rows=" << csrData.rows();
+    std::cout << " columns=" << csrData.columns();
+    std::cout << " nnz=" << csrData.nnz() << "\n";
+
+    std::vector<std::map<size_t, double>> sketch;
+    std::cout << "Running Clarkson Woodruff (CW) algorithm. Sketch size: " << cwSketchSize << " \n" << std::endl;
+    sketch_cw_sparse(csrData, cwSketchSize, sketch);
+
+    std::cout << "Sketch of size " << sketch.size() << " generated." << std::endl;
+
+    Matrix cwSketch, radSketch;
+    toDense(sketch, csrData.columns(), cwSketch);
+
+    std::cout << "Dense sketch generated!" << sketch.size() << "\n";
+
+    std::cout << "Running Rademacher (RAD) algorithm. Sketch size: " << radSketchSize << " \n" << std::endl;
+    sketch_rad(cwSketch, radSketchSize, radSketch);
+
+    std::cout << "Sketch generated!" << sketch.size() << "\n";
+
+    writeCsv(radSketch, outputPath, true);
+}
+
 std::vector<size_t>
 parseIntegers(std::string s, std::string delimiter = ",")
 {
@@ -260,7 +327,7 @@ int main(int argc, char **argv)
         std::cout << "  sketch_sizes  = the size of the sketches" << std::endl;
         std::cout << "  sketch_rows   = 1 = sketch rows, 0 to sketch columns" << std::endl;
         std::cout << "  seed          = random seed" << std::endl;
-        std::cout << "  output_dir    = path to the results" << std::endl;
+        std::cout << "  output_path   = path to the results" << std::endl;
         std::cout << std::endl;
         std::cout << "6 arguments expected, got " << argc - 1 << ":" << std::endl;
         for (int i = 1; i < argc; ++i)
@@ -276,7 +343,7 @@ int main(int argc, char **argv)
     std::string sketchRowsStr(argv[4]);
     bool sketchRows = "1" == sketchRowsStr;
     int randomSeed = std::stoi(argv[5]);
-    std::string outputDir(argv[6]);
+    std::string outputPath(argv[6]);
 
     boost::algorithm::to_lower(algorithmName);
     boost::algorithm::trim(algorithmName);
@@ -291,8 +358,8 @@ int main(int argc, char **argv)
     }
     std::cout << "\n";
     std::cout << " - Sketch rows:   " << sketchRows << "\n";
-    std::cout << " - Random Seed:   " << randomSeed << "\n";
-    std::cout << " - Output dir:    " << outputDir << "\n";
+    std::cout << " - Random seed:   " << randomSeed << "\n";
+    std::cout << " - Output path:    " << outputPath << "\n";
 
     if (randomSeed > 0)
     {
@@ -311,7 +378,15 @@ int main(int argc, char **argv)
         RandomEngine::get().seed(seeder());
     }
 
-    runSparseCsrMatrix();
+    if (algorithmName == "reduce-dim")
+    {
+        reduceDimensions(dataFilePath, sketchSizes, outputPath);
+    } 
+    else
+    {
+        std::cout << "Unknown algorithm: " << algorithmName << "\n";
+        return -1;
+    }
 
     return 0;
 }
