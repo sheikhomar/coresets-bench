@@ -306,13 +306,13 @@ void matprod_block(double *x, int nrx, int ncx,
 /*
   like matprod_block but for x stored in *row_major* order.
  */
-void matprod_block_xrm(double *x, int nrx, int ncx,
-                       double *y, int nry, int ncy, int ory,
+void matprod_block_xrm(double *x, size_t nrx, size_t ncx,
+                       double *y, size_t nry, size_t ncy, size_t ory,
                        double *z)
 {
     double sum1, sum2, sum3, sum4;
-    int i, j, k;
-    int t1, t2;
+    size_t i, j, k;
+    size_t t1, t2;
 
     for (i = 0; i < nrx; i++)
     {
