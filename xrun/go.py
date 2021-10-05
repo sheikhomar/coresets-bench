@@ -209,6 +209,7 @@ class ExperimentRunner:
         "hardinstanceb15": BenchmarkDataset(beta=1.5),
         "hardinstanceb2": BenchmarkDataset(beta=2),
         "caltech101": LocalDataset("caltech101", "data/input/caltech101-sift.txt.gz", 100000),
+        "nytimes100d": LocalDataset("nytimes100d", "data/input/docword.nytimes.rp8192-100.txt.gz", 35071691),
     }
     _datasets["censuslowd"] = LowDimensionalDataset(_datasets["census"])
     _datasets["covertypelowd"] = LowDimensionalDataset(_datasets["covertype"])

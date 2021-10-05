@@ -447,4 +447,21 @@ public:
     }
 };
 
+class NYTimes100DExperiment : public CsvDatasetExperiment
+{
+public:
+    NYTimes100DExperiment()
+    {
+        this->DimSize = 100UL;
+        this->DataSize = 300000UL;
+        this->LowDimSize = 50UL;
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing NYTimes (100-d) dataset.\n");
+    }
+};
+
+
 #endif

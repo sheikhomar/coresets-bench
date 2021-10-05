@@ -37,6 +37,24 @@ cmake -S gs -B gs/build -G "Ninja"
 cmake --build gs/build
 ```
 
+## Datasets
+
+Generate the `nytimes100d` dataset:
+
+```bash
+# Download file
+wget https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz \
+    -O data/input/docword.nytimes.txt.gz
+# Perform dimensionality reduction via random projection.
+make -C rp && rp/bin/rp.exe \
+    reduce-dim \
+    data/input/docword.nytimes.txt.gz \
+    8192,100 \
+    0 \
+    1704100552 \
+    data/input/docword.nytimes.rp8192-100.txt.gz
+```
+
 ## Debugging
 
 ### Segmentation fault
