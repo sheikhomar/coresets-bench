@@ -371,7 +371,7 @@ void sketch_cw(const Matrix &data, size_t sketch_rows, Matrix &sketch)
 {
     BCH_conf bch;
     double *s_elt, *d_elt, sgn;
-    int i, h_i, j;
+    size_t i, h_i, j;
     size_t s_rows, cols, d_rows;
     uint_fast64_t rnd, a, b, m;
 
@@ -429,8 +429,8 @@ void sketch_cw_sparse(const CsrMatrix &data, size_t sketch_rows, std::vector<std
 {
     BCH_conf bch;
     double *s_elt, *d_elt, sgn;
-    int i, h_i, j;
-    size_t s_rows, cols, d_rows, columnIndex;
+    size_t i, h_i, j;
+    size_t s_rows, cols, d_rows;
     uint_fast64_t rnd, a, b, m;
 
     // GetRNGstate(); /* init for ruint() */
@@ -483,7 +483,7 @@ void sketch_rad(const Matrix &data, size_t sketch_rows, Matrix &sketch)
     BCH_conf bch;
     Matrix r_part, p_part;
     double *s_elt, *d_elt, *r_elt, *p_elt, sqrt_rows;
-    int block_max, block_rows, i, j, k;
+    size_t block_max, block_rows, i, j, k;
     size_t s_rows, d_rows, cols;
 
     // GetRNGstate(); // getRNGState: Apply the value of .Random.seed to R's internal RNG state
