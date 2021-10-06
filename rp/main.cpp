@@ -234,6 +234,7 @@ void toDense(const std::vector<std::map<size_t, double>> &sketch, size_t columns
 void writeCsv(const Matrix &data, std::string &outputPath, bool transposed)
 {
     std::cout << "Writing sketch to " << outputPath << std::endl;
+    StopWatch sw(true);
     namespace io = boost::iostreams;
     std::ofstream fileStream(outputPath, std::ios_base::out | std::ios_base::binary);
     io::filtering_streambuf<io::output> fos;
@@ -253,6 +254,41 @@ void writeCsv(const Matrix &data, std::string &outputPath, bool transposed)
         }
         outData << std::endl;
     }
+    std::cout << " - Completed writing in " << sw.elapsedStr() << std::endl;
+}
+
+void writeCsv(const std::vector<std::map<size_t, double>> &data, size_t nColumns, std::string &outputPath)
+{
+    std::cout << "Writing sketch to " << outputPath << std::endl;
+    StopWatch sw(true);
+    namespace io = boost::iostreams;
+    std::ofstream fileStream(outputPath, std::ios_base::out | std::ios_base::binary);
+    io::filtering_streambuf<io::output> fos;
+    fos.push(io::gzip_compressor(io::gzip_params(io::gzip::best_compression)));
+    fos.push(fileStream);
+    std::ostream outData(&fos);
+
+    auto sketch_size = data.size();
+    outData << sketch_size << "\n";
+    outData << nColumns << "\n";
+    outData << "0\n"; // Number of non-zero values is unknown
+    size_t columnIndex;
+    double value;
+
+    for (size_t rowIndex = 0; rowIndex < sketch_size; rowIndex++)
+    {
+        for (auto &&pair : data[rowIndex])
+        {
+            columnIndex = pair.first;
+            value = pair.second;
+            if (value != 0.0)
+            {
+                outData << (rowIndex + 1) << " " << (columnIndex + 1) << " " << value << "\n";
+            }
+        }
+    }
+
+    std::cout << " - Completed writing in " << sw.elapsedStr() << std::endl;
 }
 
 void reduceDimensions(std::string &inputPath, std::vector<size_t> sketchSizes, std::string &outputPath)
@@ -296,6 +332,28 @@ void reduceDimensions(std::string &inputPath, std::vector<size_t> sketchSizes, s
     std::cout << "Sketch generated!" << sketch.size() << "\n";
 
     writeCsv(radSketch, outputPath, true);
+}
+
+void sketchRowsClarksonWoodruff(std::string &inputPath, std::vector<size_t> sketchSizes, std::string &outputPath)
+{
+    if (sketchSizes.size() != 1)
+    {
+        throw std::out_of_range("Sketching rows requires one sketch size.");
+    }
+
+    size_t cwSketchSize = sketchSizes[0];
+
+    CooSparseMatrix cooData;
+    parseSparseBoW(inputPath, cooData);
+
+    std::cout << "Running Clarkson Woodruff (CW) algorithm...\n";
+
+    CsrMatrix csrData(cooData);
+    std::vector<std::map<size_t, double>> sketch;
+    sketch_cw_sparse(csrData, cwSketchSize, sketch);
+    std::cout << "Sketch generated!\n";
+
+    writeCsv(sketch, cooData.columns(), outputPath);
 }
 
 std::vector<size_t>
@@ -380,7 +438,11 @@ int main(int argc, char **argv)
     if (algorithmName == "reduce-dim")
     {
         reduceDimensions(dataFilePath, sketchSizes, outputPath);
-    } 
+    }
+    else if (algorithmName == "sketch-cw")
+    {
+        sketchRowsClarksonWoodruff(dataFilePath, sketchSizes, outputPath);
+    }
     else
     {
         std::cout << "Unknown algorithm: " << algorithmName << "\n";
