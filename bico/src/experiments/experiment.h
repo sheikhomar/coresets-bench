@@ -447,6 +447,22 @@ public:
     }
 };
 
+class Caltech101LowDExperiment : public CsvDatasetExperiment
+{
+public:
+    Caltech101LowDExperiment()
+    {
+        this->DimSize = 128UL;
+        this->DataSize = 3680458UL;
+        this->LowDimSize = 50UL;
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        printf("Preparing Low-D Caltech101 dataset.\n");
+    }
+};
+
 class NYTimes100DExperiment : public CsvDatasetExperiment
 {
 public:

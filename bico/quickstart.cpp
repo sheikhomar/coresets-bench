@@ -102,6 +102,10 @@ int main(int argc, char **argv)
     {
         experiment = std::make_shared<Caltech101Experiment>();
     }
+    else if (datasetName == "caltech101lowd")
+    {
+        experiment = std::make_shared<Caltech101LowDExperiment>();
+    }
     else if (datasetName == "nytimes100d")
     {
         experiment = std::make_shared<NYTimes100DExperiment>();
