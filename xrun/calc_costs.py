@@ -113,6 +113,7 @@ def load_original_data(run_info: RunInfo):
                 "census": "data/input/USCensus1990.data.txt",
                 "covertype": "data/input/covtype.data.gz",
                 "enron": "data/input/docword.enron.txt.gz",
+                "caltech101": "data/input/caltech101-sift.txt.gz",
             }
             dataset_path = dataset_paths[dataset_name]
         else:
