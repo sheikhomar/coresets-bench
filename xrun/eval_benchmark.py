@@ -1,12 +1,11 @@
 import os, subprocess
 
-from timeit import default_timer as timer
 from typing import List, Optional
+from pathlib import Path
 
 import numpy as np
 import re
-
-from pathlib import Path
+import pandas as pd
 
 import click
 
@@ -17,6 +16,7 @@ from sklearn.metrics import pairwise_distances_argmin_min
 from xrun.gen import generate_random_seed
 from xrun.data.loader import load_dataset
 from xrun.data.run_info import RunInfo
+from xrun.data.gen_benchmark import generate_benchmark
 
 BENCHMARK_FILE_NAME = "benchmark-distortion.txt"
 
@@ -76,12 +76,18 @@ def get_cluster_member_indices(k: int, alpha: int, block_index: int, cluster_lab
     return indices
 
 
-def compute_distortion(run_info: RunInfo) -> np.ndarray:
-    parsed_str = re.findall(r"benchmark-k(\d+)-alpha(\d+)-beta", run_info.dataset_path)[0]
+def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
+    parsed_str = re.findall(r"benchmark-k(\d+)-alpha(\d+)-beta(\d+.\d+)", run_info.dataset_path)[0]
     k = int(parsed_str[0])
     alpha = int(parsed_str[1])
+    beta = float(parsed_str[2])
 
-    coreset_path = Path(run_info.output_dir) / "results.txt.gz"
+    experiment_dir = coreset_path.parent
+
+    # print(f"Loading benchmark dataset from {run_info.dataset_path}")
+    # benchmark = load_dataset(run_info.dataset_path)
+    print(f"Generating benchmark dataset with k={k}, alpha={alpha}, beta={beta:0.1f}")
+    benchmark = generate_benchmark(k=k, alpha=alpha, beta=beta)
 
     print(f"Loading coreset from {coreset_path}...")
     computed_coreset = np.loadtxt(
@@ -94,19 +100,21 @@ def compute_distortion(run_info: RunInfo) -> np.ndarray:
     coreset_weights = computed_coreset[:,0]
     coreset_points = computed_coreset[:,1:]
 
-    print(f"Loading benchmark dataset from {run_info.dataset_path}")
-    benchmark = load_dataset(run_info.dataset_path)
-
     print("Snapping coreset points to their closest benchmark points")
     # Since it is not always the case that set of coreset points Ω consist only of input points,
     # we need to snap the computed coreset points to their closest benchmark points. The snapped
     # indices referer to the points in the benchmark dataset.
     snapped_indices, _ = pairwise_distances_argmin_min(X=coreset_points, Y=benchmark, metric="euclidean")
 
-    worst_distortion = 0.0
+    df_costs = pd.DataFrame(columns=[
+        "block_index", "epsilon", "n_non_deficient_centers",
+        "coreset_cost", "real_cost", "distortion"
+    ], dtype=float)
 
     for a in range(alpha):
         for epsilon in [0.01, 0.05, 0.1, 0.3, 0.5]:
+
+            # Compute non-deficient centers for block index `a` and epsilon
             non_deficient_cluster_means = []
 
             for i in range(k):
@@ -126,15 +134,15 @@ def compute_distortion(run_info: RunInfo) -> np.ndarray:
                 # Compute the mass of points of C_i^a in Ω
                 mass = np.sum(coreset_weights[coreset_indices_in_cluster])
 
-                print(f"Computed mass for a={a}, i={i+1} is {mass}")
-            
+                # print(f"Computed mass for a={a}, i={i+1} is {mass}")
+
                 # Compute |C_i^a|(1-ϵ)
                 non_deficient_threshold = n_cluster_members * (1 - epsilon)
 
-                print(f" For epsilon {epsilon}, the non-deficient threshold is {non_deficient_threshold}")
+                # print(f" For epsilon {epsilon}, the non-deficient threshold is {non_deficient_threshold}")
 
                 if mass >= non_deficient_threshold:
-                    print(" - Adding cluster mean to the solution")
+                    # print(" - Adding cluster mean to the solution")
                     cluster_mean = np.mean(benchmark[cluster_members], axis=0)
                     non_deficient_cluster_means.append(cluster_mean)
             
@@ -155,8 +163,27 @@ def compute_distortion(run_info: RunInfo) -> np.ndarray:
 
             distortion = max(real_cost / coreset_cost, coreset_cost / real_cost)
 
-            if distortion > worst_distortion:
-                worst_distortion = distortion
+            print(f"For a={a} epsilon={epsilon:0.2f}, the distortion is: {distortion:0.2f}")
+
+            df_costs = df_costs.append({
+                "block_index": a,
+                "epsilon": epsilon,
+                "n_non_deficient_centers": center_points.shape[0],
+                "coreset_cost": coreset_cost,
+                "real_cost": real_cost, 
+                "distortion": distortion,
+            }, ignore_index=True)
+
+    df_costs.to_csv(str(experiment_dir / "benchmark-costs.csv"), index=False)
+
+    # Find the row with the largest distortion.
+    worst = df_costs.loc[df_costs.distortion.argmax()]
+    with open(experiment_dir / "coreset_cost.txt", "w") as f:
+        f.write(str(worst.coreset_cost))
+    with open(experiment_dir / "real_cost.txt", "w") as f:
+        f.write(str(worst.real_cost))
+    with open(experiment_dir / BENCHMARK_FILE_NAME, "w") as f:
+        f.write(str(worst.distortion))
 
 
 def eval_benchmark(results_dir: str) -> None:
@@ -175,8 +202,7 @@ def eval_benchmark(results_dir: str) -> None:
             print(f"Dataset path: {run_info.dataset_path} cannot be found. Skipping...")
             continue
 
-        print(run_info.dataset_path)
-        load_data(run_info)
+        compute_benchmark_costs(run_info=run_info, coreset_path=result_path)
 
         # unzipped_result_path = unzip_file(result_path)
         # print(f"Successfully computed distortion. Removing {unzipped_result_path}...")
