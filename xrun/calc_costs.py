@@ -16,6 +16,7 @@ from scipy.sparse import issparse
 from xrun.gen import generate_random_seed
 from xrun.data.loader import load_dataset
 from xrun.data.run_info import RunInfo
+from xrun.eval_benchmark import compute_benchmark_costs
 
 KMEANS_PATH = "kmeans/bin/kmeans.exe"
 
@@ -235,18 +236,21 @@ def main(results_dir: str) -> None:
             print(f"Dataset path: {run_info.dataset_path} cannot be found. Skipping...")
             continue
 
-        added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
+        if "hardinstance" in run_info.dataset:
+            # Algorithms on the benchmark dataset are evaluated differently.
+            compute_benchmark_costs(run_info=run_info, coreset_path=result_path)
+        else:
+            added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
 
-        unzipped_result_path = unzip_file(result_path)
-        centers = get_centers(unzipped_result_path)
-        compute_coreset_costs(unzipped_result_path, centers, added_cost)
-        print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
-        os.remove(unzipped_result_path)
+            unzipped_result_path = unzip_file(result_path)
+            centers = get_centers(unzipped_result_path)
+            compute_coreset_costs(unzipped_result_path, centers, added_cost)
+            print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
+            os.remove(unzipped_result_path)
 
-        original_data_points = load_original_data(run_info)
-        compute_real_cost(experiment_dir, centers, original_data_points)
-        print(f"Done processing file {index+1} of {total_files}.")
-        
+            original_data_points = load_original_data(run_info)
+            compute_real_cost(experiment_dir, centers, original_data_points)
+            print(f"Done processing file {index+1} of {total_files}.")
 
 
 if __name__ == "__main__":
