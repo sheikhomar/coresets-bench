@@ -202,11 +202,11 @@ class ExperimentRunner:
         #             download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.pubmed.txt.gz",
         #             file_size=1878648166
         #         ),
-        # "nytimes": Dataset(
-        #             name="nytimes",
-        #             download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
-        #             file_size=234225967
-        #         ),
+        "nytimes": Dataset(
+                    name="nytimes",
+                    download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
+                    file_size=234225967
+                ),
         "tower": ExternalDataset(
                     name="tower",
                     download_url="http://homepages.uni-paderborn.de/frahling/instances/Tower.txt",

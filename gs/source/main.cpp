@@ -142,7 +142,10 @@ int main(int argc, char **argv)
   {
     dataParser = std::make_shared<CovertypeParser>();
   }
-  else if (datasetName == "enron")
+  else if (
+    datasetName == "enron" ||
+    datasetName == "nytimes"
+  )
   {
     dataParser = std::make_shared<BagOfWordsParser>();
   }

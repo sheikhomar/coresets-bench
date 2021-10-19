@@ -110,6 +110,10 @@ int main(int argc, char **argv)
     {
         experiment = std::make_shared<NYTimes100DExperiment>();
     }
+    else if (datasetName == "nytimes")
+    {
+        experiment = std::make_shared<NYTimesExperiment>();
+    }
     else
     {
         std::cout << "Unknown dataset: " << datasetName << "\n";
