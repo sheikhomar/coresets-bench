@@ -197,12 +197,12 @@ class ExperimentRunner:
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.enron.txt.gz",
                     file_size=12313965
                 ),
-        # "pubmed": Dataset(
+        # "pubmed": ExternalDataset(
         #             name="pubmed",
         #             download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.pubmed.txt.gz",
         #             file_size=1878648166
         #         ),
-        "nytimes": Dataset(
+        "nytimes": ExternalDataset(
                     name="nytimes",
                     download_url="https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz",
                     file_size=234225967
