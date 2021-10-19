@@ -222,16 +222,16 @@ public:
     }
 };
 
-class EnronExperiment : public Experiment
+class BagOfWordsExperiment : public Experiment
 {
     std::string previousLine;
     size_t previousDocId;
     bool firstPoint;
 
 public:
-    EnronExperiment()
+    BagOfWordsExperiment(size_t lowDimSize = 100UL)
     {
-        this->LowDimSize = 50UL;
+        this->LowDimSize = lowDimSize;
     }
 
     void prepareFileStream(std::istream &inData)
@@ -310,6 +310,25 @@ public:
         } while (inData.good());
     }
 };
+
+class EnronExperiment : public BagOfWordsExperiment
+{
+public:
+    EnronExperiment()
+    {
+        
+    }
+};
+
+class NYTimesExperiment : public BagOfWordsExperiment
+{
+public:
+    NYTimesExperiment()
+    {
+        
+    }
+};
+
 
 class TowerExperiment : public Experiment
 {
@@ -478,22 +497,5 @@ public:
         printf("Preparing NYTimes (100-d) dataset.\n");
     }
 };
-
-class NYTimesExperiment : public CsvDatasetExperiment
-{
-public:
-    NYTimesExperiment()
-    {
-        this->DimSize = 102660UL;
-        this->DataSize = 300000UL;
-        this->LowDimSize = 100UL;
-    }
-
-    void prepareFileStream(std::istream &inData)
-    {
-        printf("Preparing NYTimes dataset.\n");
-    }
-};
-
 
 #endif
