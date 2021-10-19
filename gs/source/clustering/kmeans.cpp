@@ -83,6 +83,12 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
 
   auto clusters = std::make_shared<clustering::ClusterAssignmentList>(n, k);
 
+  // Declare an array used to maintain the squared distances of
+  // every point to the closest center among the set of centers
+  // that are being considered for any `c \in {2, 3, ..., k}`.
+  // Whenever a new center is picked, we can compare the distance
+  // between each point `p1` and the new center to determine whether
+  // the array at index `p1` should be updated.
   blaze::DynamicVector<double> smallestDistances(n);
   for (size_t p1 = 0; p1 < n; p1++)
   {
@@ -104,11 +110,12 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
     {
       for (size_t p1 = 0; p1 < n; p1++)
       {
-        // Compute dist2(p, C_k)
+        // Compute dist2(p, C_c) i.e., the squared distance between the point `p1` and 
+        // the center `centerIndex` that we picked at the previous iteration.
         double distance = squaredL2Norm.calc(p1, centerIndex);
 
-        // Compute min_dist^2(p, C_k-1)
-        // Decide if current distance is better.
+        // Compute min_dist^2(p, C_c-1)
+        // Decide if the current distance is better.
         if (distance < smallestDistances[p1])
         {
           // Set the weight of a given point to be the smallest distance
