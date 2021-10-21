@@ -149,30 +149,41 @@ def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
             # Let the non-deficient cluster means be the centers
             center_points = np.array(non_deficient_cluster_means)
 
-            # Compute coreset cost based on the coreset points and the non-deficient cluster means
-            _, closest_sqdist_coreset_centers = pairwise_distances_argmin_min(X=coreset_points, Y=center_points, metric="sqeuclidean")
+            # If only deficient clusters are found then record zero costs and distortion.
+            if center_points.shape[0] == 0:
+                df_costs = df_costs.append({
+                    "block_index": a,
+                    "epsilon": epsilon,
+                    "n_non_deficient_centers": center_points.shape[0],
+                    "coreset_cost": 0,
+                    "real_cost": 0, 
+                    "distortion": 0,
+                }, ignore_index=True)
+            else:
+                # Compute coreset cost based on the coreset points and the non-deficient cluster means
+                _, closest_sqdist_coreset_centers = pairwise_distances_argmin_min(X=coreset_points, Y=center_points, metric="sqeuclidean")
 
-            # The coreset cost is the sum of weighted squared distances to the closest centers.
-            coreset_cost = np.sum(coreset_weights * closest_sqdist_coreset_centers)
+                # The coreset cost is the sum of weighted squared distances to the closest centers.
+                coreset_cost = np.sum(coreset_weights * closest_sqdist_coreset_centers)
 
-            # Compute the real cost based on the benchmark points and the non-deficient cluster means
-            _, closest_sqdist_benchmark_centers = pairwise_distances_argmin_min(X=benchmark, Y=center_points, metric="sqeuclidean")
+                # Compute the real cost based on the benchmark points and the non-deficient cluster means
+                _, closest_sqdist_benchmark_centers = pairwise_distances_argmin_min(X=benchmark, Y=center_points, metric="sqeuclidean")
 
-            # The real cost is the sum of squared distances to the closest centers.
-            real_cost = np.sum(closest_sqdist_benchmark_centers)
+                # The real cost is the sum of squared distances to the closest centers.
+                real_cost = np.sum(closest_sqdist_benchmark_centers)
 
-            distortion = max(real_cost / coreset_cost, coreset_cost / real_cost)
+                distortion = max(real_cost / coreset_cost, coreset_cost / real_cost)
 
-            print(f"For a={a} epsilon={epsilon:0.2f}, the distortion is: {distortion:0.2f}")
+                print(f"For a={a} epsilon={epsilon:0.2f}, the distortion is: {distortion:0.2f}")
 
-            df_costs = df_costs.append({
-                "block_index": a,
-                "epsilon": epsilon,
-                "n_non_deficient_centers": center_points.shape[0],
-                "coreset_cost": coreset_cost,
-                "real_cost": real_cost, 
-                "distortion": distortion,
-            }, ignore_index=True)
+                df_costs = df_costs.append({
+                    "block_index": a,
+                    "epsilon": epsilon,
+                    "n_non_deficient_centers": center_points.shape[0],
+                    "coreset_cost": coreset_cost,
+                    "real_cost": real_cost, 
+                    "distortion": distortion,
+                }, ignore_index=True)
 
     df_costs.to_csv(str(experiment_dir / "benchmark-costs.csv"), index=False)
 
