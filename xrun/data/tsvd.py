@@ -26,6 +26,9 @@ def perform_projection(X, target_dim: int):
         # svds sorts the singular values/vectors in ascending order, reverse it
         Sigma = Sigma[::-1]
         U, VT = svd_flip(U[:, ::-1], VT[::-1])
+
+        # Perform the transformation: X * V
+        X_transformed = safe_sparse_dot(X, VT.T)
     else:
         print(" - Using LAPACK to compute SVD because input matrix is dense.")
         U, Sigma, VT = linalg.svd(
@@ -35,12 +38,12 @@ def perform_projection(X, target_dim: int):
             lapack_driver='gesdd'
         )
 
-    # Only take the k singular vectors corresponding to the largest singular values
-    # by zeroing out the rest of singular values in `Sigma`.
-    Sigma[target_dim:] = 0
+        # Only take the k singular vectors corresponding to the largest singular values
+        # by zeroing out the rest of singular values in `Sigma`.
+        Sigma[target_dim:] = 0
 
-    # X_transformed = U * Sigma * V^T
-    X_transformed = np.dot(U, np.dot(np.diag(Sigma), VT))
+        # X_transformed = U * Sigma * V^T
+        X_transformed = np.dot(U, np.dot(np.diag(Sigma), VT))
 
     end_time = timer()
     print(f" - Completed {end_time - start_time:.2f} secs. Transformed shape: {X_transformed.shape}.")
