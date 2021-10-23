@@ -55,6 +55,12 @@ make -C rp && rp/bin/rp.exe \
     data/input/docword.nytimes.rp8192-100.txt.gz
 ```
 
+Generate the `nytimespcalowd` dataset:
+
+```bash
+poetry run python -m xrun.data.tsvd -i data/input/docword.nytimes.txt.gz -d 10,20,30,40,50
+```
+
 ## Debugging
 
 ### Segmentation fault
