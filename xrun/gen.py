@@ -33,6 +33,7 @@ KNOWN_DATASETS = [
     "hardinstanceb2",
     "nytimes100d",
     "nytimes",
+    "nytimespcalowd",
 ]
 
 MT_PATH = "mt/bin/mt.exe"
@@ -153,6 +154,7 @@ def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datase
         "hardinstanceb2": [10, 20, 30, 40],
         "nytimes100d": [10, 20, 30, 40, 50],
         "nytimes": [10, 20, 30, 40, 50],
+        "nytimespcalowd": [10, 20, 30, 40, 50],
     }
 
     ready_dir = Path("data/queue/ready")

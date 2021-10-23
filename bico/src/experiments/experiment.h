@@ -498,4 +498,21 @@ public:
     }
 };
 
+
+class NYTimesPcaLowDExperiment : public CsvDatasetExperiment
+{
+public:
+    NYTimesPcaLowDExperiment(const size_t dimSize)
+    {
+        this->DimSize = dimSize;
+        this->DataSize = 300000UL;
+        this->LowDimSize = dimSize;
+    }
+
+    void prepareFileStream(std::istream &inData)
+    {
+        std::cout << "Preparing NYTimes+PCA (d=" << DimSize << ") dataset." << std::endl;
+    }
+};
+
 #endif

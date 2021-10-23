@@ -154,6 +154,13 @@ class LowDimensionalDataset(Dataset):
                 40: 4223419818,
                 50: 4224802601,
             },
+            "nytimes": {
+                10: 4202925391,
+                20: 4215519948,
+                30: 4220988256,
+                40: 4223419818,
+                50: 4224802601,
+            },
         }
         return sizes_dict[self._original_dataset.name][k]
 
@@ -221,6 +228,7 @@ class ExperimentRunner:
     _datasets["censuslowd"] = LowDimensionalDataset(_datasets["census"])
     _datasets["covertypelowd"] = LowDimensionalDataset(_datasets["covertype"])
     _datasets["caltech101lowd"] = LowDimensionalDataset(_datasets["caltech101"])
+    _datasets["nytimespcalowd"] = LowDimensionalDataset(_datasets["nytimes"])
     _dir_ready = "data/queue/ready"
     _dir_in_progress = "data/queue/in-progress"
     _dir_completed = "data/queue/completed"
