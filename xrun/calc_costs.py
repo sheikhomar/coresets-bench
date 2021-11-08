@@ -269,7 +269,10 @@ def main(results_dir: str) -> None:
             print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
             os.remove(unzipped_result_path)
 
-            original_data_points = load_original_data(run_info)
+            if run_info.dataset == "nytimespcalowd":
+                original_data_points = load_dataset(run_info.dataset_path)
+            else:
+                original_data_points = load_original_data(run_info)
             compute_real_cost(experiment_dir, centers, original_data_points)
             print(f"Done processing file {index+1} of {total_files}.")
 
