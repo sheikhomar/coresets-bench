@@ -12,6 +12,7 @@ import click
 
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import issparse
+from sklearn.utils.extmath import safe_sparse_dot
 
 from xrun.gen import generate_random_seed
 from xrun.data.loader import load_dataset
@@ -269,10 +270,15 @@ def main(results_dir: str) -> None:
             print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
             os.remove(unzipped_result_path)
 
+            original_data_points = load_original_data(run_info)
+
             if run_info.dataset == "nytimespcalowd":
-                original_data_points = load_dataset(run_info.dataset_path)
-            else:
-                original_data_points = load_original_data(run_info)
+                VT_path = f"data/input/docword.nytimes.txt.gz-svd-d{run_info.k}-vt.txt.gz"
+                print(f"Loading {VT_path}...")
+                VT = np.loadtxt(fname=VT_path, dtype=np.double, delimiter=',')
+                print(f"Computing C * V")
+                centers = safe_sparse_dot(centers, VT)
+
             compute_real_cost(experiment_dir, centers, original_data_points)
             print(f"Done processing file {index+1} of {total_files}.")
 
