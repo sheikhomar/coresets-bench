@@ -21,7 +21,7 @@ def compute_squared_frobenius_norm(file_path: Path) -> float:
 
 
 def calc_nytimes_frob(data_dir: str) -> None:
-    data_paths = list(Path(data_dir).glob("docword.nytimes.txt.gz*"))
+    data_paths = list(Path(data_dir).glob("docword.nytimes.t*.gz"))
     for data_path in data_paths:
         output_path = f"{data_path}-nytsqrfrob.txt"
         if os.path.exists(output_path):
