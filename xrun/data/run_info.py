@@ -61,4 +61,6 @@ class RunInfo:
 
     @property
     def original_dataset_name(self) -> str:
+        if self.dataset == "nytimespcalowd":
+            return "nytimes"
         return self.dataset.replace("lowd", "")
