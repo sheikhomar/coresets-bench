@@ -114,6 +114,7 @@ def load_original_data(run_info: RunInfo):
                 "census": "data/input/USCensus1990.data.txt",
                 "covertype": "data/input/covtype.data.gz",
                 "enron": "data/input/docword.enron.txt.gz",
+                "nytimes": "data/input/docword.nytimes.txt.gz",
                 "caltech101": "data/input/caltech101-sift.txt.gz",
             }
             dataset_path = dataset_paths[dataset_name]
@@ -205,11 +206,31 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
 
 def get_added_cost_for_low_dimensional_dataset(run_info: RunInfo) -> float:
     if run_info.is_low_dimensional_dataset:
-        sqrfrob_file_path = f"{run_info.dataset_path}-sqrfrob.txt"
-        if not os.path.exists(sqrfrob_file_path):
-            raise Exception(f"File not found: {sqrfrob_file_path} Run `python -m xrun.data.calc_frob_diff -d data/input` to generate extra costs.")
-        with open(sqrfrob_file_path, "r") as fp:
-            return float(fp.read())
+        if run_info.dataset == "nytimespcalowd":
+            # For NYTimes dataset, the PCA transformed dataset has fewer dimensions than
+            # the original dataset because storing 500,000 * 102,000 values is not
+            # practical. To add back the mass that are projected away, we compute the
+            # quantity ||A||^2_F - ||B||^2_F where A is the original data matrix
+            # and B is the PCA transformed data matrix.
+            sqrfrob_original_path = "data/input/docword.nytimes.txt.gz-nytsqrfrob.txt"
+            if not os.path.exists(sqrfrob_original_path):
+                raise Exception(f"File not found: {sqrfrob_original_path} Run `python -m xrun.data.nytimes_calc_frob -d data/input` to generate it.")
+
+            sqrfrob_reduced_path = f"{run_info.dataset_path}-nytsqrfrob.txt"
+            if not os.path.exists(sqrfrob_reduced_path):
+                raise Exception(f"File not found: {sqrfrob_reduced_path} Run `python -m xrun.data.nytimes_calc_frob -d data/input` to generate it.")
+
+            with open(sqrfrob_original_path, "r") as fp:
+                sqrfrob_original = float(fp.read())
+            with open(sqrfrob_reduced_path, "r") as fp:
+                sqrfrob_reduced = float(fp.read())
+            return sqrfrob_original - sqrfrob_reduced
+        else:
+            sqrfrob_file_path = f"{run_info.dataset_path}-sqrfrob.txt"
+            if not os.path.exists(sqrfrob_file_path):
+                raise Exception(f"File not found: {sqrfrob_file_path} Run `python -m xrun.data.calc_frob_diff -d data/input` to generate extra costs.")
+            with open(sqrfrob_file_path, "r") as fp:
+                return float(fp.read())
     return 0.0
 
 
