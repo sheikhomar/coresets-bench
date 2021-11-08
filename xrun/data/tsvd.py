@@ -15,6 +15,7 @@ from xrun.data.loader import load_dataset
 def perform_projection(X, target_dim: int):
     print(f"Computing SVD with target dimensions {target_dim}...")
     start_time = timer()
+    VT = None
 
     # U: Unitary matrix having left singular vectors as columns. 
     # Sigma: The singular values, sorted in descending order.
@@ -48,7 +49,7 @@ def perform_projection(X, target_dim: int):
     end_time = timer()
     print(f" - Completed {end_time - start_time:.2f} secs. Transformed shape: {X_transformed.shape}.")
 
-    return X_transformed
+    return X_transformed, VT
 
 
 def persist_to_disk(data: np.ndarray, output_path: str) -> None:
@@ -63,9 +64,9 @@ def persist_to_disk(data: np.ndarray, output_path: str) -> None:
 def reduce_dim(input_path: str, target_dims: List[int]) -> None:
     X = load_dataset(input_path)
     for target_dim in target_dims:
-        X_transformed = perform_projection(X, target_dim)
-        output_path = f"{input_path}-svd-d{target_dim}.txt.gz"
-        persist_to_disk(X_transformed, output_path)
+        X_transformed, VT = perform_projection(X, target_dim)
+        persist_to_disk(X_transformed, f"{input_path}-svd-d{target_dim}.txt.gz")
+        persist_to_disk(VT, f"{input_path}-svd-d{target_dim}-vt.txt.gz")
 
 
 def validate_target_dims(ctx, param, value):
