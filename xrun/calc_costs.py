@@ -11,7 +11,7 @@ from pathlib import Path
 import click
 
 from sklearn.metrics import pairwise_distances, pairwise_distances_argmin_min
-from scipy.sparse import issparse
+from scipy.sparse import linalg as sparse_linalg, issparse
 from sklearn.utils.extmath import safe_sparse_dot
 
 from xrun.gen import generate_random_seed
@@ -136,8 +136,11 @@ def compute_real_cost(experiment_dir: Path, center_points: np.ndarray, data_poin
 
     print("Computing real cost... ", end="")
 
+    D = pairwise_distances(data_points, center_points, metric="euclidean", n_jobs=-1)
+    D = np.square(D)
+
     # For each point (w, p) in S, find the distance to its closest center
-    _, dist_closest_centers = pairwise_distances_argmin_min(X=data_points, Y=center_points, metric="sqeuclidean")
+    dist_closest_centers = np.min(D, axis=1)
 
     # Weigh the distances and sum it all up
     cost = np.sum(dist_closest_centers)
