@@ -235,6 +235,22 @@ def get_added_cost_for_low_dimensional_dataset(run_info: RunInfo) -> float:
     return 0.0
 
 
+def expand_dimensionality_nytimes(k: int, centers: np.ndarray):
+    start_time = timer()
+    VT_path = f"data/input/docword.nytimes.txt.gz-svd-d{k}-vt.txt.gz"
+    print(f" - Loading {VT_path}...", end="")
+    VT = np.loadtxt(fname=VT_path, dtype=np.double, delimiter=',')
+    end_time = timer()
+    print(f" Loaded in {end_time - start_time:.2f} secs")
+
+    start_time = timer()
+    print(f" - Computing C * V ", end="")
+    centers = safe_sparse_dot(centers, VT)
+    end_time = timer()
+    print(f". Done in {end_time - start_time:.2f} secs")
+    return centers
+
+
 @click.command(help="Compute costs for coresets.")
 @click.option(
     "-r",
@@ -273,13 +289,11 @@ def main(results_dir: str) -> None:
             original_data_points = load_original_data(run_info)
 
             if run_info.dataset == "nytimespcalowd":
-                VT_path = f"data/input/docword.nytimes.txt.gz-svd-d{run_info.k}-vt.txt.gz"
-                print(f"Loading {VT_path}...")
-                VT = np.loadtxt(fname=VT_path, dtype=np.double, delimiter=',')
-                print(f"Computing C * V")
-                centers = safe_sparse_dot(centers, VT)
+                centers = expand_dimensionality_nytimes(k=run_info.k, centers=centers)
 
             compute_real_cost(experiment_dir, centers, original_data_points)
+            centers = None
+            del centers
             print(f"Done processing file {index+1} of {total_files}.")
 
 
