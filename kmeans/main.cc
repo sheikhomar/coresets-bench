@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
     for (int i = 0; i < k; i++)
     {
-        std::cout << " - Writing center " << (i+1) << std::endl;
+        // std::cout << " - Writing center " << (i+1) << std::endl;
         output << "1 ";
         for (int j = 0; j < dimension; j++)
         {
