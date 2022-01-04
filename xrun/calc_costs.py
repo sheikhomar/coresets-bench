@@ -311,7 +311,7 @@ def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidat
     print(f"Solution distortions:\n{df_solution_distortions}")
 
     # Find worst-case candidate solution.
-    max_distortion_idx = df_solution_distortions['distortions'].idxmax()
+    max_distortion_idx = df_solution_distortions['distortion'].idxmax()
     max_distortion_row = df_solution_distortions.iloc[max_distortion_idx]
     max_distortion_sol_idx = max_distortion_row["solution_index"]
 
