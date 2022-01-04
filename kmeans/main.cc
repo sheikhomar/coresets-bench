@@ -45,7 +45,8 @@ int main(int argc, char **argv)
     }
 
     MASTER master = MASTER(argv[1], k, dimension, iterations, projections);
-    double***centers = master.run();
+    size_t repetitions = 1;
+    double***centers = master.run(repetitions);
 
     /*
     std::cout << "centers" <<std::endl;

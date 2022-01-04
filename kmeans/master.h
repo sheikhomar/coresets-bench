@@ -19,7 +19,7 @@ public:
     MASTER(char*input, int k, int dimension, int iterations);
     MASTER(char*input, int k, int dimension, int iterations, bool projections);
     virtual~MASTER();
-    double***run();
+    double***run(size_t repetitions);
     bool readFile(char*filename);
     double calccosts();
     void readInitialCenters(char*initcenter);
@@ -147,7 +147,7 @@ MASTER::~MASTER()
     delete finalcenters;
 }
 
-double***MASTER::run()
+double***MASTER::run(size_t repetitions)
 {
     KMEANS algo(this, k, dimension, numberOfPoints, projections);
 
@@ -155,7 +155,7 @@ double***MASTER::run()
     double temp;
     int itcount;
     bool converged;
-    for (int j = 0; j < 5; j++)
+    for (int j = 0; j < repetitions; j++)
     {
         algo.initialCenters(points, centers);
         itcount = 0;
@@ -168,7 +168,7 @@ double***MASTER::run()
             //std::cout << "itcount " << itcount << " iterations " << iterations << " converged " << converged << "\n";
         }
         while (!converged && (itcount < iterations || iterations <= 0));
-        std::cout << "Run " << j << " out of 5 finished" << std::endl;
+        std::cout << "Run " << j << " out of " << repetitions << " finished" << std::endl;
 
         temp = calccosts();
         //std::cout << temp<<std::endl;
