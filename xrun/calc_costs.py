@@ -1,17 +1,16 @@
-import os, subprocess
+import os, subprocess, shutil, re
 
 from timeit import default_timer as timer
 from typing import List, Optional
-
-import numpy as np
-import re
-
 from pathlib import Path
 
+import pandas as pd
+import numpy as np
 import click
 
 from sklearn.metrics import pairwise_distances, pairwise_distances_argmin_min
 from scipy.sparse import linalg as sparse_linalg, issparse
+from sklearn.utils import shuffle
 from sklearn.utils.extmath import safe_sparse_dot
 
 from xrun.gen import generate_random_seed
@@ -251,6 +250,78 @@ def expand_dimensionality_nytimes(k: int, centers: np.ndarray):
     return centers
 
 
+def load_cost_from_file(file_path: Path):
+    with open(file_path, "r") as f:
+        return float(f.read())
+
+
+def collect_distortions_of_solutions(costs_dir: Path, n_candidate_solutions: int) -> pd.DataFrame:
+    costs = []
+    for solution_index in range(1, n_candidate_solutions+1):
+        real_cost = load_cost_from_file(costs_dir / f"solution{solution_index}-real_cost.txt")
+        coreset_cost = load_cost_from_file(costs_dir / f"solution{solution_index}-coreset_cost.txt")
+        solution_path = costs_dir / f"solution{solution_index}-centers.txt"
+        distortion = max(float(real_cost/coreset_cost), float(coreset_cost/real_cost))
+        costs.append({
+            "solution_index": solution_index,
+            "real_cost": real_cost,
+            "coreset_cost": coreset_cost,
+            "distortion": distortion,
+            "solution_path": solution_path,
+        })
+    return pd.DataFrame(costs)
+
+
+def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int) -> None:
+    experiment_dir = coreset_path.parent
+
+    added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
+
+    unzipped_result_path = unzip_file(coreset_path)
+    original_data_points = load_original_data(run_info)
+
+    # Generate a number of candidate solutions and compute their costs
+    for solution_index in range(1, n_candidate_solutions+1):
+        print(f"Generating solution #{solution_index}...")
+        solution_path = coreset_path.parent / "centers.txt"
+        centers = get_centers(unzipped_result_path)
+
+        coreset_cost_path = compute_coreset_costs(unzipped_result_path, centers, added_cost)
+
+        if run_info.dataset == "nytimespcalowd":
+            centers = expand_dimensionality_nytimes(k=run_info.k, centers=centers)
+
+        real_cost_path = compute_real_cost(experiment_dir, centers, original_data_points)
+        centers = None
+        del centers
+
+        for src_path in [coreset_cost_path, real_cost_path, solution_path]:
+            # Assume all file paths have .txt extention
+            dest_path = src_path.parent / f"solution{solution_index}-{src_path.name}"
+            shutil.move(str(src_path), dest_path)
+
+    print(f"Successfully generate candidate solutions. Removing {unzipped_result_path}...")
+    os.remove(unzipped_result_path)
+
+    # Compute distortions of candidate solutions.
+    df_solution_distortions = collect_distortions_of_solutions(
+        costs_dir=experiment_dir,
+        n_candidate_solutions=n_candidate_solutions,
+    )
+    print(f"Solution distortions:\n{df_solution_distortions}")
+
+    # Find worst-case candidate solution.
+    max_distortion_idx = df_solution_distortions['distortions'].idxmax()
+    max_distortion_row = df_solution_distortions.iloc[max_distortion_idx]
+    max_distortion_sol_idx = max_distortion_row["solution_index"]
+
+    # Rename file paths for worst-case solution.
+    for file_name in ["coreset_cost.txt", "real_cost.txt", "centers.txt"]:
+        src_path = experiment_dir / f"solution{max_distortion_sol_idx}-{file_name}"
+        dest_path = src_path.parent / file_name
+        shutil.move(src_path, dest_path)
+
+
 @click.command(help="Compute costs for coresets.")
 @click.option(
     "-r",
@@ -278,23 +349,9 @@ def main(results_dir: str) -> None:
             # Algorithms on the benchmark dataset are evaluated differently.
             compute_benchmark_costs(run_info=run_info, coreset_path=result_path)
         else:
-            added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
+            compute_real_dataset_costs(run_info=run_info, coreset_path=result_path, n_candidate_solutions=5)
 
-            unzipped_result_path = unzip_file(result_path)
-            centers = get_centers(unzipped_result_path)
-            compute_coreset_costs(unzipped_result_path, centers, added_cost)
-            print(f"Successfully computed coreset cost. Removing {unzipped_result_path}...")
-            os.remove(unzipped_result_path)
-
-            original_data_points = load_original_data(run_info)
-
-            if run_info.dataset == "nytimespcalowd":
-                centers = expand_dimensionality_nytimes(k=run_info.k, centers=centers)
-
-            compute_real_cost(experiment_dir, centers, original_data_points)
-            centers = None
-            del centers
-            print(f"Done processing file {index+1} of {total_files}.")
+        print(f"Done processing file {index+1} of {total_files}.")
 
 
 if __name__ == "__main__":
