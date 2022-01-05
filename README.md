@@ -46,6 +46,8 @@ Generate the `nytimes100d` dataset:
 wget https://archive.ics.uci.edu/ml/machine-learning-databases/bag-of-words/docword.nytimes.txt.gz \
     -O data/input/docword.nytimes.txt.gz
 # Perform dimensionality reduction via random projection.
+export CPATH=/home/omar/apps/boost_1_76_0
+export LIBRARY_PATH=/home/omar/apps/boost_1_76_0/stage/lib
 make -C rp && rp/bin/rp.exe \
     reduce-dim \
     data/input/docword.nytimes.txt.gz \
