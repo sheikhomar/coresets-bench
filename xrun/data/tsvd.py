@@ -61,12 +61,22 @@ def persist_to_disk(data: np.ndarray, output_path: str) -> None:
     print(f" - Completed in : {end_time - start_time:.2f} secs")
 
 
+def compute_squared_frobenius_norm(X: np.ndarray, X_reduced: np.ndarray) -> float:
+    frob_norm = np.linalg.norm(X - X_reduced, ord="fro")
+    squared_frob_norm = np.square(frob_norm)
+    return squared_frob_norm
+
+
 def reduce_dim(input_path: str, target_dims: List[int]) -> None:
     X = load_dataset(input_path)
     for target_dim in target_dims:
         X_transformed, VT = perform_projection(X, target_dim)
-        persist_to_disk(X_transformed, f"{input_path}-svd-d{target_dim}.txt.gz")
+        squared_frob_norm = compute_squared_frobenius_norm(X=X, X_reduced=X_transformed)
+        reduced_dim_file_path = f"{input_path}-svd-d{target_dim}.txt.gz"
+        persist_to_disk(X_transformed, reduced_dim_file_path)
         persist_to_disk(VT, f"{input_path}-svd-d{target_dim}-vt.txt.gz")
+        with open(f"{reduced_dim_file_path}-sqrfrob.txt", "w") as fp:
+            fp.write(f"{squared_frob_norm}")
 
 
 def validate_target_dims(ctx, param, value):
