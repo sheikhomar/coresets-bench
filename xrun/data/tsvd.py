@@ -62,7 +62,16 @@ def persist_to_disk(data: np.ndarray, output_path: str) -> None:
 
 
 def compute_squared_frobenius_norm(X: np.ndarray, X_reduced: np.ndarray) -> float:
-    frob_norm = np.linalg.norm(X - X_reduced, ord="fro")
+    if X.shape != X_reduced.shape:
+        # Special case for BoW datasets where dimensions mismatch
+        diff = X_reduced
+    else:
+        diff = X - X_reduced
+
+    if issparse(diff):
+        frob_norm = sparse_linalg.norm(diff, ord="fro")
+    else:
+        frob_norm = np.linalg.norm(diff, ord="fro")
     squared_frob_norm = np.square(frob_norm)
     return squared_frob_norm
 
