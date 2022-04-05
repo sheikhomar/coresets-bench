@@ -11,7 +11,7 @@ SensitivitySampling::SensitivitySampling(size_t numberOfClusters, size_t targetS
 std::shared_ptr<Coreset>
 SensitivitySampling::run(const blaze::DynamicMatrix<double> &data)
 {
-    clustering::KMeans kMeansAlg(NumberOfClusters);
+    clustering::KMeans kMeansAlg(NumberOfClusters, true, 0);
 
     auto result = kMeansAlg.run(data);
 
