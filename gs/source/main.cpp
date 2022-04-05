@@ -91,7 +91,6 @@ int main(int argc, char **argv)
     std::cout << "  m             = coreset size" << std::endl;
     std::cout << "  seed          = random seed" << std::endl;
     std::cout << "  output_dir    = path to output results" << std::endl;
-    std::cout << "  low_data_path = path to low-dimensional dataset" << std::endl;
     std::cout << std::endl;
     std::cout << "7 arguments expected, got " << argc - 1 << ":" << std::endl;
     for (int i = 1; i < argc; ++i)
@@ -106,14 +105,6 @@ int main(int argc, char **argv)
   size_t m = std::stoul(argv[5]);
   int randomSeed = std::stoi(argv[6]);
   std::string outputDir(argv[7]);
-  std::string lowDimDataFilePath;
-  bool useLowDimDataset;
-
-  if (argc > 8)
-  {
-    lowDimDataFilePath.assign(argv[8]);
-    useLowDimDataset = true;
-  }
 
   boost::algorithm::to_lower(algorithmName);
   boost::algorithm::trim(algorithmName);
@@ -124,7 +115,6 @@ int main(int argc, char **argv)
   std::cout << "Running " << algorithmName << " with following parameters:\n";
   std::cout << " - Dataset:       " << datasetName << "\n";
   std::cout << " - Input path:    " << dataFilePath << "\n";
-  std::cout << " - Low-D dataset: " << lowDimDataFilePath << "\n";
   std::cout << " - Clusters:      " << k << "\n";
   std::cout << " - Coreset size:  " << m << "\n";
   std::cout << " - Random Seed:   " << randomSeed << "\n";
@@ -171,19 +161,8 @@ int main(int argc, char **argv)
   std::shared_ptr<blaze::DynamicMatrix<double>> data;
   {
     utils::StopWatch timeDataParsing(true);
-
-    if (useLowDimDataset)
-    {
-      std::cout << "Parsing low-dimensional data:" << std::endl;
-      data::CsvParser csvParser;
-      data = csvParser.parse(lowDimDataFilePath);
-    }
-    else 
-    {
-      std::cout << "Parsing data:" << std::endl;
-      data = dataParser->parse(dataFilePath);
-    }
-
+    std::cout << "Parsing data:" << std::endl;
+    data = dataParser->parse(dataFilePath);
     std::cout << "Data parsed: " << data->rows() << " x " << data->columns() << " in "<< timeDataParsing.elapsedStr() << std::endl;
   }
 
