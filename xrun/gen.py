@@ -111,6 +111,12 @@ def validate_datasets(ctx, param, value):
     required=False,
 )
 @click.option(
+    "-c",
+    "--coreset-size-multiple",
+    type=click.INT,
+    required=True,
+)
+@click.option(
     "-a",
     "--algorithms",
     type=click.STRING,
@@ -132,7 +138,7 @@ def validate_datasets(ctx, param, value):
     is_flag=True,
     help="Recreate files."
 )
-def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datasets: List[str], force: bool) -> None:
+def main(iter_start: int, iter_end: Optional[int], coreset_size_multiple: int, algorithms: List[str], datasets: List[str], force: bool) -> None:
     if not os.path.exists(MT_PATH):
         print(f"Random seed generator '{MT_PATH}' cannot be found. You can build it: make -C mt")
         return
@@ -166,7 +172,7 @@ def main(iter_start: int, iter_end: Optional[int], algorithms: List[str], datase
         for algo in algorithms:
             for k in k_values:
                 for i in range(iter_start, iter_end+1):
-                    m = 200 * k
+                    m = coreset_size_multiple * k
                     random_seed = generate_random_seed()
                     print(f"Random seed {random_seed}")
                     exp_details = {
