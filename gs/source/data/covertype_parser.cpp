@@ -6,7 +6,6 @@ namespace io = boost::iostreams;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 CovertypeParser::parse(const std::string &filePath)
 {
-    std::cout << "Attempting to parse file " << filePath << std::endl;
     if (!boost::filesystem::exists(filePath))
     {
         std::stringstream errMsg;
@@ -23,11 +22,8 @@ CovertypeParser::parse(const std::string &filePath)
     filteredInputStream.push(fileStream);
     std::istream inData(&filteredInputStream);
 
-    printf("Preparing Covertype dataset.\n");
-
     auto dimSize = 54UL;
     auto dataSize = 581012UL;
-    printf("Data size: %ld, Dimensions: %ld\n", dataSize, dimSize);
 
     auto data = std::make_shared<blaze::DynamicMatrix<double>>(dataSize, dimSize);
     data->reset();
@@ -45,7 +41,6 @@ CovertypeParser::parse(const std::string &filePath)
 
         if (splits.size() != dimSize + 1)
         {
-            printf("Skipping line no %ld: expected %ld values but got %ld.\n", lineNo, dimSize+1, splits.size());
             continue;
         }
 

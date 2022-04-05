@@ -6,8 +6,6 @@ namespace io = boost::iostreams;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 BagOfWordsParser::parse(const std::string &filePath)
 {
-    printf("Opening input file %s...\n", filePath.c_str());
-
     std::ifstream fileStream(filePath, std::ios_base::in | std::ios_base::binary);
     io::filtering_streambuf<io::input> filteredInputStream;
     if (boost::ends_with(filePath, ".gz"))
@@ -36,8 +34,6 @@ BagOfWordsParser::parse(const std::string &filePath)
     auto dimSize = std::stoul(line.c_str());
     std::getline(inData, line); // Skip line with NNZ
 
-    printf("Data size: %ld, vocabulary size: %ld\n", dataSize, dimSize);
-
     bool firstDataLine = true;
     size_t previousDocId = 0, currentRow = 0, docId = 0, wordId = 0;
     size_t lineNo = 3;
@@ -56,7 +52,7 @@ BagOfWordsParser::parse(const std::string &filePath)
 
         if (splits.size() != 3)
         {
-            printf("Skipping line no %ld: '%s'.\n", lineNo, line.c_str());
+            // printf("Skipping line no %ld: '%s'.\n", lineNo, line.c_str());
             continue;
         }
 

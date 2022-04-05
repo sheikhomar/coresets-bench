@@ -7,11 +7,10 @@ namespace x3 = boost::spirit::x3;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 CsvParser::parse(const std::string &filePath)
 {
-    std::cout << "Attempting to parse file " << filePath << std::endl;
     if (!boost::filesystem::exists(filePath))
     {
         std::stringstream errMsg;
-        errMsg << "Unable to parse Covertype data because file " << filePath << " does not exist.";
+        errMsg << "Unable to parse CSV data because file " << filePath << " does not exist.";
         throw std::invalid_argument(errMsg.str());
     }
 
@@ -23,8 +22,6 @@ CsvParser::parse(const std::string &filePath)
     }
     filteredInputStream.push(fileStream);
     std::istream inData(&filteredInputStream);
-
-    printf("Parsing CSV dataset.\n");
 
     auto data = std::make_shared<blaze::DynamicMatrix<double>>(0, 0);
 
@@ -39,7 +36,7 @@ CsvParser::parse(const std::string &filePath)
 
         if (line.size() < 1)
         {
-            printf("Skipping line no %ld: expected %ld values but empty line found.\n", lineNo, dimSize);
+            // "Skipping line no %ld: expected %ld values but empty line found.\n", lineNo, dimSize);
             continue;
         }
 
@@ -54,7 +51,7 @@ CsvParser::parse(const std::string &filePath)
 
             if (values.size() != dimSize)
             {
-                printf("Skipping line no %ld: expected %ld values but got %ld.\n", lineNo, dimSize, values.size());
+                // "Skipping line no %ld: expected %ld values but got %ld.\n", lineNo, dimSize, values.size());
                 continue;
             }
 

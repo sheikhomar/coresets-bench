@@ -34,10 +34,6 @@ SensitivitySampling::generateCoresetPoints(const blaze::DynamicMatrix<double> &d
     auto samplingDistribution = clusterAssignments.getNormalizedCosts();
 
     auto sampledIndices = random.choice(TargetSamplesInCoreset, samplingDistribution);
-    // std::cout << "Sampled T points: \n"
-    //           << (*sampledIndices) << "\n";
-
-    std::cout << "Compute weights for sampled points.\n";
 
     double T = static_cast<double>(TargetSamplesInCoreset);
 
@@ -105,8 +101,6 @@ SensitivitySampling::calcCenterWeights(
         // printf("  =>  w_%ld = %.5f\n", clusterOfPointP, (*centerWeights)[clusterOfPointP]);
     }
 
-    printf("\n\n");
-
     // For each of the k' centers, compute the center weights.
     for (size_t c = 0; c < numberOfClusters; c++)
     {
@@ -121,8 +115,6 @@ SensitivitySampling::calcCenterWeights(
 
         // Update the center weight.
         (*centerWeights)[c] = centerWeight;
-
-        printf("|C_%ld| = %3ld,  w_%ld = %2.5f,  new w_%ld = %2.5f \n", c, numberOfPointsInCluster, c, w_i, c, centerWeight);
     }
 
     return centerWeights;

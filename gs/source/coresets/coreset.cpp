@@ -28,15 +28,13 @@ void Coreset::addPoint(size_t pointIndex, double weight)
     {
         coresetPoint = std::make_shared<WeightedPoint>(pointIndex, 0.0, false);
         this->points.push_back(coresetPoint);
-        //printf("            Adding");
     }
     else
     {
-        //printf("            Updating");
+        // Updating
     }
 
     coresetPoint->Weight += weight;
-    //printf(" point %ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
 }
 
 void Coreset::addCenter(size_t clusterIndex, std::shared_ptr<blaze::DynamicVector<double>> center, double weight)
@@ -47,15 +45,12 @@ void Coreset::addCenter(size_t clusterIndex, std::shared_ptr<blaze::DynamicVecto
         coresetPoint = std::make_shared<WeightedPoint>(clusterIndex, 0.0, true);
         this->points.push_back(coresetPoint);
         centers.emplace(clusterIndex, center);
-        //printf("            Adding");
     }
     else
     {
-        //printf("            Updating");
+        // Updating
     }
     coresetPoint->Weight += weight;
-
-    //printf(" center c_%ld with weight %0.2f to the coreset\n", coresetPoint->Index, coresetPoint->Weight);
 }
 
 std::shared_ptr<WeightedPoint>
@@ -72,8 +67,6 @@ Coreset::size() const
 
 void Coreset::writeToStream(const blaze::DynamicMatrix<double> &originalDataPoints, std::ostream &out)
 {
-    std::cout << "Write coreset data to a stream." << std::endl;
-
     const size_t m = this->points.size();
     const size_t d = originalDataPoints.columns();
 

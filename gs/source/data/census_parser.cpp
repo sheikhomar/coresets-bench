@@ -6,8 +6,6 @@ namespace io = boost::iostreams;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 CensusParser::parse(const std::string &filePath)
 {
-    printf("Opening input file %s...\n", filePath.c_str());
-
     std::ifstream fileStream(filePath, std::ios_base::in | std::ios_base::binary);
     io::filtering_streambuf<io::input> filteredInputStream;
     if (boost::ends_with(filePath, ".gz"))
@@ -20,12 +18,10 @@ CensusParser::parse(const std::string &filePath)
     std::string line;
 
     std::getline(inData, line); // Ignore the header line.
-    printf("Preparing Census Dataset. Skip first line: %s\n", line.c_str());
+    // Preparing Census Dataset. Skip first line: %s\n", line.c_str());
 
     auto dimSize = 68UL;
     auto dataSize = 2458285UL;
-
-    printf("Data size: %ld, Dimensions: %ld\n", dataSize, dimSize);
 
     size_t currentRow = 0;
     size_t lineNo = 3;
@@ -43,7 +39,7 @@ CensusParser::parse(const std::string &filePath)
 
         if (splits.size() != dimSize+1)
         {
-            printf("Skipping line no %ld: expected %ld values but got %ld.\n", lineNo, dimSize+1, splits.size());
+            // printf("Skipping line no %ld: expected %ld values but got %ld.\n", lineNo, dimSize+1, splits.size());
             continue;
         }
 

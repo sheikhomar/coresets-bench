@@ -40,7 +40,7 @@ GroupSampling::run(const blaze::DynamicMatrix<double> &data)
 std::shared_ptr<RingSet>
 GroupSampling::makeRings(const clustering::ClusterAssignmentList &clusterAssignments)
 {
-    printf("Making rings...\n");
+    // printf("Making rings...\n");
 
     const int ringRangeStart = -static_cast<int>(floor(std::log10(static_cast<double>(Beta))));
     const int ringRangeEnd = -ringRangeStart;
@@ -106,7 +106,7 @@ GroupSampling::makeRings(const clustering::ClusterAssignmentList &clusterAssignm
 
 void GroupSampling::addShortfallPointsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<Coreset> coresetContainer)
 {
-    printf("\n\nAdding shortfall points to the coreset..\n");
+    // printf("\n\nAdding shortfall points to the coreset..\n");
 
     // Handle points whose costs are below the lowest ring range i.e. l < log(1/beta).
     // These are called shortfall points because they fall short of being captured by the
@@ -143,7 +143,7 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
     double kDouble = static_cast<double>(k);
     double totalCost = rings->computeCostOfOvershotPoints();
 
-    printf("\n\nGrouping overshot points, cost(O) = %0.5f\n", totalCost);
+    // printf("\n\nGrouping overshot points, cost(O) = %0.5f\n", totalCost);
 
     for (size_t c = 0; c < k; c++)
     {
@@ -217,7 +217,9 @@ void GroupSampling::groupOvershotPoints(const clustering::ClusterAssignmentList 
 
 void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clusters, const std::shared_ptr<RingSet> rings, std::shared_ptr<GroupSet> groups)
 {
+    #ifdef VERBOSE_DEBUG
     printf("Grouping ring points...\n");
+    #endif
 
     auto k = clusters.getNumberOfClusters();
     auto kDouble = static_cast<double>(k);
@@ -319,7 +321,9 @@ void GroupSampling::groupRingPoints(const clustering::ClusterAssignmentList &clu
 
 void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatrix<double> &data, const clustering::ClusterAssignmentList &clusterAssignments, const std::shared_ptr<GroupSet> groups, std::shared_ptr<Coreset> coresetContainer)
 {
+    #ifdef VERBOSE_DEBUG
     printf("\n\nSampling from groups...\n");
+    #endif
 
     const size_t minSamplingSize = 1;
     auto T = coresetContainer->TargetSize;
@@ -397,8 +401,11 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
         }
     }
 
+    #ifdef VERBOSE_DEBUG
     // Now, we have to deal with the groups that we can sample points from.
     printf("\n\nDealing with the groups that we can sample points from...");
+    #endif
+    
     for (auto &m : samplingGroupIndices)
     {
         auto group = groups->at(m);
@@ -428,63 +435,63 @@ void GroupSampling::addSampledPointsFromGroupsToCoreset(const blaze::DynamicMatr
     }
 }
 
-void GroupSampling::printPythonCodeForVisualisation(std::shared_ptr<clustering::ClusteringResult> result, std::shared_ptr<RingSet> rings)
-{
-    auto clusterAssignments = result->getClusterAssignments();
-    auto centers = result->getCentroids();
-    auto k = clusterAssignments.getNumberOfClusters();
-    auto n = clusterAssignments.getNumberOfPoints();
+// void GroupSampling::printPythonCodeForVisualisation(std::shared_ptr<clustering::ClusteringResult> result, std::shared_ptr<RingSet> rings)
+// {
+//     auto clusterAssignments = result->getClusterAssignments();
+//     auto centers = result->getCentroids();
+//     auto k = clusterAssignments.getNumberOfClusters();
+//     auto n = clusterAssignments.getNumberOfPoints();
 
-    printf("k = %ld\n", k);
-    printf("cluster_labels = [");
-    for (size_t p = 0; p < n; p++)
-    {
-        printf("%ld, ", clusterAssignments.getCluster(p));
-    }
-    printf("]\n");
+//     printf("k = %ld\n", k);
+//     printf("cluster_labels = [");
+//     for (size_t p = 0; p < n; p++)
+//     {
+//         printf("%ld, ", clusterAssignments.getCluster(p));
+//     }
+//     printf("]\n");
 
-    printf("cluster_centers = np.array([\n");
-    for (size_t c = 0; c < centers.rows(); c++)
-    {
-        printf("  [");
-        for (size_t d = 0; d < centers.columns(); d++)
-        {
-            printf("%0.5f, ", centers.at(c, d));
-        }
-        printf("],\n");
-    }
-    printf("])\n");
+//     printf("cluster_centers = np.array([\n");
+//     for (size_t c = 0; c < centers.rows(); c++)
+//     {
+//         printf("  [");
+//         for (size_t d = 0; d < centers.columns(); d++)
+//         {
+//             printf("%0.5f, ", centers.at(c, d));
+//         }
+//         printf("],\n");
+//     }
+//     printf("])\n");
 
-    printf("ring_ranges = [");
-    for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
-    {
-        printf("%d, ", l);
-    }
-    printf("]\n");
+//     printf("ring_ranges = [");
+//     for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
+//     {
+//         printf("%d, ", l);
+//     }
+//     printf("]\n");
 
-    printf("rings = np.array([\n");
-    for (size_t c = 0; c < k; c++)
-    {
-        printf("  [");
-        for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
-        {
-            auto ring = rings->find(c, l);
-            printf("%0.5f, ", ring->getLowerBoundCost());
-        }
-        printf("],\n");
-    }
-    printf("])\n");
+//     printf("rings = np.array([\n");
+//     for (size_t c = 0; c < k; c++)
+//     {
+//         printf("  [");
+//         for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
+//         {
+//             auto ring = rings->find(c, l);
+//             printf("%0.5f, ", ring->getLowerBoundCost());
+//         }
+//         printf("],\n");
+//     }
+//     printf("])\n");
 
-    printf("rings_upper_bounds = np.array([\n");
-    for (size_t c = 0; c < k; c++)
-    {
-        printf("  [");
-        for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
-        {
-            auto ring = rings->find(c, l);
-            printf("%0.5f, ", ring->getUpperBoundCost());
-        }
-        printf("],\n");
-    }
-    printf("])\n");
-}
+//     printf("rings_upper_bounds = np.array([\n");
+//     for (size_t c = 0; c < k; c++)
+//     {
+//         printf("  [");
+//         for (int l = rings->RangeStart; l <= rings->RangeEnd; l++)
+//         {
+//             auto ring = rings->find(c, l);
+//             printf("%0.5f, ", ring->getUpperBoundCost());
+//         }
+//         printf("],\n");
+//     }
+//     printf("])\n");
+// }

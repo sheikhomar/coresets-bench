@@ -156,56 +156,6 @@ namespace coresets
         {
             return clusterRays.at(centerPoint);
         }
-
-        void printPython()
-        {
-            for (auto element : clusterRays)
-            {
-                auto centerIndex = element.first;
-                auto rays = element.second;
-
-                std::cout << "Center index " << centerIndex << " - Number rays: " << rays.size() << "\n";
-
-                for (auto &&ray : rays)
-                {
-                    std::cout << "  Ray " << ray->OriginIndex << " - Number points: " << ray->points.size() << "\n";
-                    // for (size_t i = 0; i < ray->points.size(); i++)
-                    // {
-                    //     auto p = ray->points[i];
-                    //     auto l = ray->lengths[i];
-                    //     auto d = ray->distances[i];
-                    //     printf("     Point %2d  length = %0.4f   distance = %0.4f\n", p, l, d);
-                    // }
-                }
-            }
-
-            // Print out ray vectors
-            // std::cout << "\nrays = np.array([\n";
-            // std::cout << "  [\n";
-            // size_t lastIndex = rays[0]->OriginIndex;
-
-            // for (auto &&ray : rays)
-            // {
-            //     // std::cout << "Processing " << ray->OriginIndex << "\n\n";
-            //     if (ray->OriginIndex != lastIndex)
-            //     {
-            //         std::cout << "  ],\n";
-            //         std::cout << "  [\n";
-            //     }
-
-            //     std::cout << "    [";
-            //     for (size_t j = 0; j < ray->Direction.size(); j++)
-            //     {
-            //         std::cout << ray->Direction[j] << ",";
-            //     }
-            //     std::cout << "],\n";
-
-            //     lastIndex = ray->OriginIndex;
-            // }
-
-            // std::cout << "  ]\n";
-            // std::cout << ")]\n";
-        }
     };
 
     class RayMaker
@@ -241,10 +191,6 @@ namespace coresets
             auto clusters = kMeansAlg.pickInitialCentersViaKMeansPlusPlus(data);
             auto rayContainer = createRays(data, clusters);
 
-            rayContainer->printPython();
-
-            std::cout << "Computing 1D clustering...\n";
-
             auto centerIndicies = *clusters->getClusterIndices();
             size_t centerCounter = 0;
             for (auto &&centerPoint : centerIndicies)
@@ -252,14 +198,10 @@ namespace coresets
                 auto nClusterPoints = clusters->countPointsInCluster(centerPoint);
                 auto rays = rayContainer->getRays(centerPoint);
 
-                std::cout << "  Center index " << centerPoint << "  N: " << nClusterPoints << "  Target " << TargetPointsFromEachCluster << "\n";
-
                 for (auto &&ray : rays)
                 {
                     size_t n1dClusters = ray->calcNumberOfOneDimensionalClusters(nClusterPoints, TargetPointsFromEachCluster);
                     auto clusteredPoints = ray->performOneDimensionalClustering(n1dClusters);
-
-                    std::cout << "   Ray " << ray->OriginIndex << " - nRayPoints: " << ray->getNumberOfPoints() << "  nClusters " << n1dClusters << "\n";
 
                     for (auto &&pair : *clusteredPoints)
                     {
@@ -289,7 +231,6 @@ namespace coresets
             {
                 auto points = clusters->getPointsByCluster(centerPoint);
 
-                std::cout << "Center " << centerPoint << " has " << points->size() << " points.\n";
                 double numberOfPointInCluster = static_cast<double>(points->size());
                 double numberOfRays = std::min(
                     static_cast<double>(MaxNumberOfRaysPerCluster),

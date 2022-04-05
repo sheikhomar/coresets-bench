@@ -51,8 +51,6 @@ KMeans::copyRows(const blaze::DynamicMatrix<double> &data, const std::vector<siz
 
 void computeSquaredNorms(const blaze::DynamicMatrix<double> &dataPoints, std::vector<double> &squaredNorms)
 {
-  // std::cout << "Computing squared norms!";
-  // utils::StopWatch sw(true);
   double val = 0.0;
   for (size_t i = 0; i < dataPoints.rows(); i++)
   {
@@ -67,8 +65,6 @@ void computeSquaredNorms(const blaze::DynamicMatrix<double> &dataPoints, std::ve
     }
     squaredNorms[i] = sumOfSquares;
   }
-
-  //std::cout << " Done  in " << sw.elapsedStr() << "\n";
 }
 
 std::shared_ptr<clustering::ClusterAssignmentList>
@@ -132,8 +128,6 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       // being picked as the next candidate center.
       centerIndex = random.choice(smallestDistances);
     }
-
-    std::cout << "Picked point " << centerIndex << " as center for cluster " << c << " in " << pickCenterSW.elapsedStr() << std::endl;
   }
 
   // Final reassignment step.
@@ -145,8 +139,6 @@ KMeans::pickInitialCentersViaKMeansPlusPlus(const blaze::DynamicMatrix<double> &
       clusters->assign(p1, centerIndex, distance);
     }
   }
-
-  std::cout << "k-means++ initialization completed in " << sw.elapsedStr() << std::endl;
 
   return clusters;
 }
@@ -239,8 +231,6 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
         blaze::row(centroids, c) /= count;
       }
 
-      std::cout << "Iteration " << (i + 1) << " took " << iterSW.elapsedStr() << ". ";
-
       // Recompute the squared distances again.
       computeSquaredNorms(centroids, centerSquaredNorms);
 
@@ -249,11 +239,8 @@ KMeans::runLloydsAlgorithm(const blaze::DynamicMatrix<double> &matrix, blaze::Dy
       auto diffAbsSquaredMatrix = blaze::pow(diffAbsMatrix, 2); // Square each element.
       auto frobeniusNormDiff = blaze::sqrt(blaze::sum(diffAbsSquaredMatrix));
 
-      std::cout << "Frobenius norm of centroids difference: " << frobeniusNormDiff << "!" << std::endl;
-
       if (frobeniusNormDiff < this->ConvergenceDiff)
       {
-        std::cout << "Stopping k-Means as centroids do not improve. Frobenius norm Diff: " << frobeniusNormDiff << "\n";
         break;
       }
     }

@@ -6,8 +6,6 @@ namespace io = boost::iostreams;
 std::shared_ptr<blaze::DynamicMatrix<double>>
 TowerParser::parse(const std::string &filePath)
 {
-    printf("Opening input file %s...\n", filePath.c_str());
-
     std::ifstream fileStream(filePath, std::ios_base::in | std::ios_base::binary);
     io::filtering_streambuf<io::input> filteredInputStream;
     if (boost::ends_with(filePath, ".gz"))
@@ -17,11 +15,8 @@ TowerParser::parse(const std::string &filePath)
     filteredInputStream.push(fileStream);
     std::istream inData(&filteredInputStream);
 
-    printf("Preparing Tower dataset.\n");
-
     auto dimSize = 3UL;
     auto dataSize = 4915200UL;
-    printf("Data size: %ld, Dimensions: %ld\n", dataSize, dimSize);
 
     auto data = std::make_shared<blaze::DynamicMatrix<double>>(dataSize, dimSize);
     data->reset();

@@ -67,7 +67,6 @@ void writeDoneFile(const std::string &outputDir)
 void outputResultsToFile(const std::shared_ptr<blaze::DynamicMatrix<double>> originalDataPoints, const std::shared_ptr<coresets::Coreset> coreset, const std::string &outputDir)
 {
   std::string outputFilePath = outputDir + "/results.txt.gz";
-  std::cout << "Writing coreset to " << outputFilePath << std::endl;
 
   namespace io = boost::iostreams;
   std::ofstream fileStream(outputFilePath, std::ios_base::out | std::ios_base::binary);

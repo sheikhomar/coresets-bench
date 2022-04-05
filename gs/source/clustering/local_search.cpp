@@ -59,11 +59,6 @@ LocalSearch::run(const blaze::DynamicMatrix<double> &data)
     auto swapClusterAssignments = clusterAssignments;
     auto bestClusterAssignments = swapClusterAssignments;
 
-    printf("Cost before swaps %0.5f\n", bestCost);
-
-    std::cout << "Best centers: \n"
-              << bestCenters << "\n";
-
     for (size_t c = 0; c < k; c++)
     {
         for (size_t p = 0; p < n; p++)
@@ -77,15 +72,11 @@ LocalSearch::run(const blaze::DynamicMatrix<double> &data)
             // The cost after the swap.
             double cost = swapClusterAssignments.getTotalCost();
 
-            printf("Swaping cluster %3ld with point %3ld result in cost %0.5f\n", c, p, cost);
-
             if (cost < bestCost)
             {
                 bestCost = cost;
                 bestCenters = centers;
                 bestClusterAssignments = swapClusterAssignments;
-                std::cout << "Found new best centers: \n"
-                          << bestCenters << "\n";
             }
         }
     }
@@ -115,10 +106,6 @@ LocalSearch::runPlusPlus(const blaze::DynamicMatrix<double> &data, size_t nSampl
     auto bestCenters = centers;
     auto bestClusterAssignments = clusterAssignments;
 
-    printf("Intial cost: %0.5f\n", bestCost);
-    std::cout << "Initial centers \n"
-              << bestCenters << "\n";
-
     blaze::DynamicVector<size_t> bestPointsUsedAsCenters(k);
     blaze::DynamicVector<size_t> pointsUsedAsCenters(k);
     size_t swapCount = 0;
@@ -126,12 +113,8 @@ LocalSearch::runPlusPlus(const blaze::DynamicMatrix<double> &data, size_t nSampl
 resetIteration:
     for (size_t iteration = 0; iteration < nIterations; iteration++)
     {
-        // printf("Starting iteration %ld\n\n", iteration);
-
         auto costs = clusterAssignments.getCentroidDistances();
         auto sampledPoints = random.choice(nSamples, costs); // TODO: Without replacement?
-
-        // std::cout << "Sampled points: \n" << *sampledPoints << "\n";
 
         for (size_t c = 0; c < k; c++)
         {
@@ -160,15 +143,11 @@ resetIteration:
                     bestCenters = centers;
                     bestClusterAssignments = clusterAssignments;
                     printf("Found new best cost: %0.5f - number of swaps performed %ld  - ", bestCost, swapCount);
-                    std::cout << "New best centers: \n" << bestCenters << "\n";
                     goto resetIteration;
                 }
             }
         }
     }
-
-    std::cout << "Final points used as centers: \n"
-              << bestPointsUsedAsCenters << "\n\n";
 
     return std::make_shared<ClusteringResult>(bestClusterAssignments, bestCenters);
 }

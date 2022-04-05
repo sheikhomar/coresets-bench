@@ -53,7 +53,6 @@ public:
     void outputResultsToFile(ProxySolution<Point> *sol)
     {
         std::string outputFilePath = OutputDir + "/results.txt.gz";
-        printf("Write results to %s...\n", outputFilePath.c_str());
 
         namespace io = boost::iostreams;
         std::ofstream fileStream(outputFilePath, std::ios_base::out | std::ios_base::binary);
