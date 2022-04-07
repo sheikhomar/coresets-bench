@@ -128,8 +128,7 @@ def load_original_data(run_info: RunInfo):
     return datasets[dataset_name]
 
 
-def compute_real_cost(experiment_dir: Path, center_points: np.ndarray, data_points: np.ndarray) -> Path:
-    cost_file_path = experiment_dir / "real_cost.txt"
+def compute_real_cost(data_points: np.ndarray, center_points: np.ndarray, cost_file_path: Path) -> Path:
     if cost_file_path.exists():
         return cost_file_path
 
@@ -151,13 +150,11 @@ def compute_real_cost(experiment_dir: Path, center_points: np.ndarray, data_poin
     return cost_file_path
 
 
-def compute_coreset_costs(coreset_file_path: Path, center_points: np.ndarray, added_cost: float) -> Path:
-    cost_file_path = coreset_file_path.parent / "coreset_cost.txt"
+def compute_coreset_costs(coreset: np.ndarray, center_points: np.ndarray, added_cost: float, cost_file_path: Path) -> Path:
     if cost_file_path.exists():
         return cost_file_path
 
     print("Computing coreset cost... ", end='')
-    coreset = np.loadtxt(fname=coreset_file_path, dtype=np.double, delimiter=' ', skiprows=1)
     coreset_weights = coreset[:,0]
     coreset_points = coreset[:,1:]
 
@@ -196,7 +193,7 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
     for file_path in output_paths:
         costs_computed = np.all([
             os.path.exists(file_path.parent / cfn)
-            for cfn in ["real_cost.txt", "coreset_cost.txt"]
+            for cfn in ["real_cost.txt", "coreset_cost.txt", "real_cost_synthetic.txt", "coreset_cost_synthetic.txt"]
         ])
         run_info = load_run_info(file_path.parent)
         if not costs_computed and run_info is not None:
@@ -255,12 +252,12 @@ def load_cost_from_file(file_path: Path):
         return float(f.read())
 
 
-def collect_distortions_of_solutions(costs_dir: Path, n_candidate_solutions: int) -> pd.DataFrame:
+def collect_distortions_of_solutions(costs_dir: Path, n_candidate_solutions: int, file_postfix: str) -> pd.DataFrame:
     costs = []
     for solution_index in range(1, n_candidate_solutions+1):
-        real_cost = load_cost_from_file(costs_dir / f"solution{solution_index}-real_cost.txt")
-        coreset_cost = load_cost_from_file(costs_dir / f"solution{solution_index}-coreset_cost.txt")
-        solution_path = costs_dir / f"solution{solution_index}-centers.txt"
+        real_cost = load_cost_from_file(costs_dir / f"solution{solution_index}-real_cost{file_postfix}.txt")
+        coreset_cost = load_cost_from_file(costs_dir / f"solution{solution_index}-coreset_cost{file_postfix}.txt")
+        solution_path = costs_dir / f"solution{solution_index}-centers{file_postfix}.txt"
         distortion = max(float(real_cost/coreset_cost), float(coreset_cost/real_cost))
         costs.append({
             "solution_index": solution_index,
@@ -332,26 +329,51 @@ def generate_arbitrary_k_cluster_centers(data_matrix: np.ndarray, k: int) -> np.
     return cluster_centers
 
 
-def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int) -> None:
+def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int, use_synthetic_clusters: bool=False) -> None:
     experiment_dir = coreset_path.parent
+    file_postfix = "_synthetic" if use_synthetic_clusters else ""
+
+    coreset_cost_path = experiment_dir / f"real_cost{file_postfix}.txt"
+    real_cost_path = experiment_dir / f"real_cost{file_postfix}.txt"
+    
+    if coreset_cost_path.exists() and real_cost_path.exists():
+        print("Costs are exists! Existing...")
+        return
 
     added_cost = get_added_cost_for_low_dimensional_dataset(run_info)
 
     unzipped_result_path = unzip_file(coreset_path)
     original_data_points = load_original_data(run_info)
 
+    coreset = np.loadtxt(fname=unzipped_result_path, dtype=np.double, delimiter=' ', skiprows=1)
+    # coreset_weights = coreset[:,0]
+    coreset_points = coreset[:,1:]
+
     # Generate a number of candidate solutions and compute their costs
     for solution_index in range(1, n_candidate_solutions+1):
         print(f"Generating solution #{solution_index}...")
-        solution_path = coreset_path.parent / "centers.txt"
-        centers = get_centers(unzipped_result_path)
+        solution_path = coreset_path.parent / f"centers{file_postfix}.txt"
+        if use_synthetic_clusters:
+            centers = generate_arbitrary_k_cluster_centers(data_matrix=coreset_points, k=run_info.k)
+            np.savetxt(str(solution_path), centers)
+        else:
+            centers = get_centers(unzipped_result_path)
 
-        coreset_cost_path = compute_coreset_costs(unzipped_result_path, centers, added_cost)
+        coreset_cost_path = compute_coreset_costs(
+            coreset=coreset,
+            center_points=centers,
+            added_cost=added_cost,
+            cost_file_path=experiment_dir / f"coreset_cost{file_postfix}.txt",
+        )
 
         if run_info.dataset == "nytimespcalowd":
             centers = expand_dimensionality_nytimes(k=run_info.k, centers=centers)
 
-        real_cost_path = compute_real_cost(experiment_dir, centers, original_data_points)
+        real_cost_path = compute_real_cost(
+            data_points=original_data_points,
+            center_points=centers,
+            cost_file_path=experiment_dir / f"real_cost{file_postfix}.txt",
+        )
         centers = None
         del centers
 
@@ -367,6 +389,7 @@ def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidat
     df_solution_distortions = collect_distortions_of_solutions(
         costs_dir=experiment_dir,
         n_candidate_solutions=n_candidate_solutions,
+        file_postfix=file_postfix,
     )
     print(f"Solution distortions:\n{df_solution_distortions}")
 
@@ -376,7 +399,8 @@ def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidat
     max_distortion_sol_idx = max_distortion_row["solution_index"]
 
     # Rename file paths for worst-case solution.
-    for file_name in ["coreset_cost.txt", "real_cost.txt", "centers.txt"]:
+    dest_files = [f"coreset_cost{file_postfix}.txt", f"real_cost{file_postfix}.txt", f"centers{file_postfix}.txt"]
+    for file_name in dest_files:
         src_path = experiment_dir / f"solution{max_distortion_sol_idx}-{file_name}"
         dest_path = src_path.parent / file_name
         shutil.move(src_path, dest_path)
@@ -409,7 +433,18 @@ def main(results_dir: str) -> None:
             # Algorithms on the benchmark dataset are evaluated differently.
             compute_benchmark_costs(run_info=run_info, coreset_path=result_path)
         else:
-            compute_real_dataset_costs(run_info=run_info, coreset_path=result_path, n_candidate_solutions=5)
+            compute_real_dataset_costs(
+                run_info=run_info,
+                coreset_path=result_path,
+                n_candidate_solutions=5,
+                use_synthetic_clusters=False,
+            )
+            compute_real_dataset_costs(
+                run_info=run_info,
+                coreset_path=result_path,
+                n_candidate_solutions=5,
+                use_synthetic_clusters=True,
+            )
 
         print(f"Done processing file {index+1} of {total_files}.")
 
