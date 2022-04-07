@@ -272,8 +272,8 @@ def collect_distortions_of_solutions(costs_dir: Path, n_candidate_solutions: int
     return pd.DataFrame(costs)
 
 
-def compute_mimimum_enclosing_ball(data_matrix: np.ndarray, n_iter: int=100):
-    # Implements algorithms from http://cm.bell-labs.co/who/clarkson/coresets2.pdf
+def compute_minimum_enclosing_ball(data_matrix: np.ndarray, n_iter: int=100):
+    # Implements algorithm from http://cm.bell-labs.co/who/clarkson/coresets2.pdf
 
     n_points = data_matrix.shape[0]
 
