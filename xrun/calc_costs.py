@@ -301,6 +301,37 @@ def compute_minimum_enclosing_ball(data_matrix: np.ndarray, n_iter: int=100):
     return center_point, radius
 
 
+def generate_arbitrary_point_within_minimum_enclosing_ball(center_point: np.ndarray, radius: float) -> np.ndarray:
+    n_dim = center_point.shape[1]
+
+    # Generate a random vector
+    random_vector = np.random.multivariate_normal(
+        mean=center_point.reshape(-1), 
+        cov=np.eye(n_dim)
+    )
+
+    # Generate a random length within radius
+    length = np.random.uniform(low=1e-5, high=radius)
+
+    random_vector = length * (random_vector / np.linalg.norm(random_vector))
+
+    return random_vector
+
+
+def generate_arbitrary_k_cluster_centers(data_matrix: np.ndarray, k: int) -> np.ndarray:
+    center_point, radius = compute_minimum_enclosing_ball(data_matrix=data_matrix, n_iter=100)
+
+    n_dim = data_matrix.shape[1]
+    cluster_centers = np.zeros(shape=(k, n_dim))
+    for i in range(k):
+        cluster_centers[i] = generate_arbitrary_point_within_minimum_enclosing_ball(
+            center_point=center_point,
+            radius=radius,
+        )
+
+    return cluster_centers
+
+
 def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int) -> None:
     experiment_dir = coreset_path.parent
 
