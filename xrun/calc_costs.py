@@ -272,6 +272,35 @@ def collect_distortions_of_solutions(costs_dir: Path, n_candidate_solutions: int
     return pd.DataFrame(costs)
 
 
+def compute_mimimum_enclosing_ball(data_matrix: np.ndarray, n_iter: int=100):
+    # Implements algorithms from http://cm.bell-labs.co/who/clarkson/coresets2.pdf
+
+    n_points = data_matrix.shape[0]
+
+    # Randomly pick an initial point.
+    initial_point_index = np.random.choice(n_points)
+    explored_point_indices = [initial_point_index]
+    
+    # Set the initial point as the center
+    center_point = data_matrix[[initial_point_index], :].copy()
+
+    for i in range(1, n_iter+1):
+        # Find the point farthest away from current center point
+        farthest_point_index = np.argmax(pairwise_distances(center_point, data_matrix))
+        explored_point_indices.append(farthest_point_index)
+        farthest_point = data_matrix[farthest_point_index, :]
+
+        # Move the center towards the farthest point
+        center_point = center_point + (farthest_point - center_point)/(i+1)
+
+    # Compute the radius
+    explored_point_indices = list(set(explored_point_indices))
+    explored_points = data_matrix[explored_point_indices, :]
+    radius = np.max(pairwise_distances(center_point, explored_points))
+
+    return center_point, radius
+
+
 def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int) -> None:
     experiment_dir = coreset_path.parent
 
