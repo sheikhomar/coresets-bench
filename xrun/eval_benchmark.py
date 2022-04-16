@@ -11,6 +11,7 @@ import numba
 
 import click
 
+from joblib import Parallel, delayed
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import issparse
 from sklearn.metrics import pairwise_distances_argmin_min, pairwise_distances_chunked
@@ -218,28 +219,29 @@ def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
     with open(benchmark_distortion_path, "w") as f:
         f.write(str(worst.distortion))
 
+def process_result(index: int, n_total: int, result_path: Path):
+    print(f"Processing file {index+1} of {n_total}: {result_path}")
+    experiment_dir = result_path.parent
 
-def eval_benchmark(results_dir: str) -> None:
+    run_info = load_run_info(experiment_dir)
+    if run_info is None:
+        print("Cannot process results file because run file is missing.")
+        return
+
+    if not os.path.exists(run_info.dataset_path):
+        print(f"Dataset path: {run_info.dataset_path} cannot be found. Skipping...")
+        return
+
+    compute_benchmark_costs(run_info=run_info, coreset_path=result_path)    
+
+
+def eval_benchmark(results_dir: str, n_jobs: int) -> None:
     output_paths = find_unprocesses_result_files(results_dir)
     total_files = len(output_paths)
-    for index, result_path in enumerate(output_paths):
-        print(f"Processing file {index+1} of {total_files}: {result_path}")
-        experiment_dir = result_path.parent
-
-        run_info = load_run_info(experiment_dir)
-        if run_info is None:
-            print("Cannot process results file because run file is missing.")
-            continue
-
-        if not os.path.exists(run_info.dataset_path):
-            print(f"Dataset path: {run_info.dataset_path} cannot be found. Skipping...")
-            continue
-
-        compute_benchmark_costs(run_info=run_info, coreset_path=result_path)
-
-        # unzipped_result_path = unzip_file(result_path)
-        # print(f"Successfully computed distortion. Removing {unzipped_result_path}...")
-        # os.remove(unzipped_result_path)
+    Parallel(n_jobs=n_jobs)(
+        delayed(process_result)(index=index, n_total=total_files, result_path=result_path)
+        for index, result_path in enumerate(output_paths)
+    )
 
 
 @click.command(help="Evaluate algorithm on benchmark dataset.")
@@ -249,8 +251,15 @@ def eval_benchmark(results_dir: str) -> None:
     type=click.STRING,
     required=True,
 )
-def main(results_dir: str) -> None:
-    eval_benchmark(results_dir=results_dir)
+@click.option(
+    "-j",
+    "--n-jobs",
+    type=click.INT,
+    required=False,
+    default=1
+)
+def main(results_dir: str, n_jobs: int) -> None:
+    eval_benchmark(results_dir=results_dir, n_jobs=n_jobs)
 
 
 if __name__ == "__main__":
