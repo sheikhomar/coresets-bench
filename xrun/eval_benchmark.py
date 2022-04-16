@@ -87,12 +87,19 @@ def pairwise_distances_argmin_min_fast(X, Y, metric):
 
 
 def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
+    experiment_dir = coreset_path.parent
+    coreset_cost_path = experiment_dir / "coreset_cost.txt"
+    real_cost_path = experiment_dir / "real_cost.txt"
+    benchmark_distortion_path = experiment_dir / BENCHMARK_FILE_NAME
+
+    if benchmark_distortion_path.exists():
+        print("Costs are already computed! Existing...")
+        return
+
     parsed_str = re.findall(r"benchmark-k(\d+)-alpha(\d+)-beta(\d+.\d+)", run_info.dataset_path)[0]
     k = int(parsed_str[0])
     alpha = int(parsed_str[1])
     beta = float(parsed_str[2])
-
-    experiment_dir = coreset_path.parent
 
     # print(f"Loading benchmark dataset from {run_info.dataset_path}")
     # benchmark = load_dataset(run_info.dataset_path)
@@ -204,11 +211,11 @@ def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
 
     # Find the row with the largest distortion.
     worst = df_costs.loc[df_costs.distortion.argmax()]
-    with open(experiment_dir / "coreset_cost.txt", "w") as f:
+    with open(coreset_cost_path, "w") as f:
         f.write(str(worst.coreset_cost))
-    with open(experiment_dir / "real_cost.txt", "w") as f:
+    with open(real_cost_path, "w") as f:
         f.write(str(worst.real_cost))
-    with open(experiment_dir / BENCHMARK_FILE_NAME, "w") as f:
+    with open(benchmark_distortion_path, "w") as f:
         f.write(str(worst.distortion))
 
 
