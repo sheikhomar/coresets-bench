@@ -2,16 +2,19 @@ import os, subprocess
 
 from typing import List, Optional
 from pathlib import Path
+from datetime import datetime
 
 import numpy as np
 import re
 import pandas as pd
+import numba
 
 import click
 
 from sklearn.metrics import pairwise_distances
 from scipy.sparse import issparse
-from sklearn.metrics import pairwise_distances_argmin_min
+from sklearn.metrics import pairwise_distances_argmin_min, pairwise_distances_chunked
+from sklearn.metrics.pairwise import _argmin_min_reduce
 
 from xrun.gen import generate_random_seed
 from xrun.data.loader import load_dataset
@@ -62,7 +65,7 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
             return_paths.append(file_path)
     return return_paths
 
-
+@numba.njit
 def get_cluster_member_indices(k: int, alpha: int, block_index: int, cluster_label: int):
     """Computes the members of cluster `i` induces by block `a`.
     
@@ -74,6 +77,13 @@ def get_cluster_member_indices(k: int, alpha: int, block_index: int, cluster_lab
     cluster_labels = np.array([(n // k**a) % k  for n in range(n)])
     indices = np.where(cluster_labels == cluster_label)[0]
     return indices
+
+def pairwise_distances_argmin_min_fast(X, Y, metric):
+    indices, values = zip(*pairwise_distances_chunked(
+        X, Y, reduce_func=_argmin_min_reduce, metric=metric, working_memory=10*1024))
+    indices = np.concatenate(indices)
+    values = np.concatenate(values)
+    return indices, values
 
 
 def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
@@ -101,10 +111,13 @@ def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
     coreset_points = computed_coreset[:,1:]
 
     print("Snapping coreset points to their closest benchmark points")
+    start_time = datetime.now()
     # Since it is not always the case that set of coreset points Ω consist only of input points,
     # we need to snap the computed coreset points to their closest benchmark points. The snapped
     # indices referer to the points in the benchmark dataset.
-    snapped_indices, _ = pairwise_distances_argmin_min(X=coreset_points, Y=benchmark, metric="euclidean")
+    snapped_indices, _ = pairwise_distances_argmin_min_fast(X=coreset_points, Y=benchmark, metric="euclidean")
+    end_time = datetime.now()
+    print(f" - Finished in {end_time - start_time}")
 
     df_costs = pd.DataFrame(columns=[
         "block_index", "epsilon", "n_non_deficient_centers",
@@ -113,6 +126,7 @@ def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
 
     for a in range(alpha):
         for epsilon in [0.01, 0.05, 0.1, 0.3, 0.5]:
+            start_time = datetime.now()
 
             # Compute non-deficient centers for block index `a` and epsilon
             non_deficient_cluster_means = []
@@ -161,20 +175,21 @@ def compute_benchmark_costs(run_info: RunInfo, coreset_path: Path) -> None:
                 }, ignore_index=True)
             else:
                 # Compute coreset cost based on the coreset points and the non-deficient cluster means
-                _, closest_sqdist_coreset_centers = pairwise_distances_argmin_min(X=coreset_points, Y=center_points, metric="sqeuclidean")
+                _, closest_sqdist_coreset_centers = pairwise_distances_argmin_min_fast(X=coreset_points, Y=center_points, metric="sqeuclidean")
 
                 # The coreset cost is the sum of weighted squared distances to the closest centers.
                 coreset_cost = np.sum(coreset_weights * closest_sqdist_coreset_centers)
 
                 # Compute the real cost based on the benchmark points and the non-deficient cluster means
-                _, closest_sqdist_benchmark_centers = pairwise_distances_argmin_min(X=benchmark, Y=center_points, metric="sqeuclidean")
+                _, closest_sqdist_benchmark_centers = pairwise_distances_argmin_min_fast(X=benchmark, Y=center_points, metric="sqeuclidean")
 
                 # The real cost is the sum of squared distances to the closest centers.
                 real_cost = np.sum(closest_sqdist_benchmark_centers)
 
                 distortion = max(real_cost / coreset_cost, coreset_cost / real_cost)
 
-                print(f"For a={a} epsilon={epsilon:0.2f}, the distortion is: {distortion:0.2f}")
+                end_time = datetime.now()
+                print(f"For a={a} epsilon={epsilon:0.2f}, the distortion is: {distortion:0.2f} - Finished in {end_time - start_time}")
 
                 df_costs = df_costs.append({
                     "block_index": a,
