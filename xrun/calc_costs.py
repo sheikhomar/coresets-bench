@@ -330,7 +330,6 @@ def generate_arbitrary_k_cluster_centers(data_matrix: np.ndarray, k: int) -> np.
     return cluster_centers
 
 
-@numba.njit
 def generate_random_points_within_convex_hull(data_matrix: np.ndarray, k: int, n_samples: int = 2) -> np.ndarray:
     """Generates k random points within the convex hull of the data.
 
@@ -355,7 +354,10 @@ def generate_random_points_within_convex_hull(data_matrix: np.ndarray, k: int, n
 
         # Generate a point by taking the linear combination of randomly
         # selected input points (using random scalar values)
-        new_point = np.dot(proba_vector.T, data_matrix[random_indices])
+        if issparse(data_matrix):
+            new_point = safe_sparse_dot(proba_vector.T, data_matrix[random_indices])
+        else:
+            new_point = np.dot(proba_vector.T, data_matrix[random_indices])
 
         cluster_centers[i] = new_point
 
