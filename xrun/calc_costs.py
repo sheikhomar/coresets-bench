@@ -1,4 +1,4 @@
-import os, subprocess, shutil, re
+loimport os, subprocess, shutil, re
 
 from timeit import default_timer as timer
 from typing import List, Optional
@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import click
+import numba
 
 from sklearn.metrics import pairwise_distances, pairwise_distances_argmin_min
 from scipy.sparse import linalg as sparse_linalg, issparse
@@ -325,6 +326,38 @@ def generate_arbitrary_k_cluster_centers(data_matrix: np.ndarray, k: int) -> np.
             center_point=center_point,
             radius=radius,
         )
+
+    return cluster_centers
+
+
+@numba.njit
+def generate_random_points_within_convex_hull(data_matrix: np.ndarray, k: int, n_samples: int = 2) -> np.ndarray:
+    """Generates k random points within the convex hull of the data.
+
+    Note that points are not placed uniformly at random. It is more
+    likely to generate points in dense areas of data space.
+    """
+    n_points = data_matrix.shape[0]
+
+    n_points, n_dim = data_matrix.shape
+    point_indices = np.arange(start=0, stop=n_points)
+    cluster_centers = np.zeros(shape=(k, n_dim))
+    
+    for i in range(k):
+        # Generate a random vector
+        random_vector = np.random.rand(n_samples, 1)
+
+        # Scale the random vector to L1 unit norm
+        proba_vector = random_vector / random_vector.sum()
+
+        # Randomly select data points
+        random_indices = np.random.choice(point_indices, n_samples)
+
+        # Generate a point by taking the linear combination of randomly
+        # selected input points (using random scalar values)
+        new_point = np.dot(proba_vector.T, data_matrix[random_indices])
+
+        cluster_centers[i] = new_point
 
     return cluster_centers
 
