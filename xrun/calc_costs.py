@@ -194,7 +194,11 @@ def find_unprocesses_result_files(results_dir: str) -> List[Path]:
     for file_path in output_paths:
         costs_computed = np.all([
             os.path.exists(file_path.parent / cfn)
-            for cfn in ["real_cost.txt", "coreset_cost.txt", "real_cost_synthetic.txt", "coreset_cost_synthetic.txt"]
+            for cfn in [
+                "real_cost.txt", "coreset_cost.txt",
+                "real_cost_synthetic.txt", "coreset_cost_synthetic.txt",
+                "real_cost_convexsynthetic.txt", "coreset_cost_convexsynthetic.txt"
+            ]
         ])
         run_info = load_run_info(file_path.parent)
         if not costs_computed and run_info is not None:
@@ -366,9 +370,15 @@ def generate_random_points_within_convex_hull(data_matrix: np.ndarray, k: int, n
     return generated_points
 
 
-def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int, use_synthetic_clusters: bool=False) -> None:
+def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int, synthetic_center_type: str=None) -> None:
     experiment_dir = coreset_path.parent
-    file_postfix = "_synthetic" if use_synthetic_clusters else ""
+
+    if synthetic_center_type == "meb":
+        file_postfix = "_synthetic"
+    elif synthetic_center_type == "convex":
+        file_postfix = "_convexsynthetic"
+    else:
+        file_postfix = ""
 
     coreset_cost_path = experiment_dir / f"real_cost{file_postfix}.txt"
     real_cost_path = experiment_dir / f"real_cost{file_postfix}.txt"
@@ -390,8 +400,12 @@ def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidat
     for solution_index in range(1, n_candidate_solutions+1):
         print(f"Generating solution #{solution_index}...")
         solution_path = coreset_path.parent / f"centers{file_postfix}.txt"
-        if use_synthetic_clusters:
+        if synthetic_center_type == "meb":
             centers = generate_random_points_within_minimum_enclosing_ball(data_matrix=coreset_points, k=run_info.k)
+            np.savetxt(str(solution_path), centers)
+        elif synthetic_center_type == "convex":
+            kmeans_centers = get_centers(unzipped_result_path)
+            centers = generate_random_points_within_convex_hull(data_matrix=kmeans_centers, k=run_info.k)
             np.savetxt(str(solution_path), centers)
         else:
             centers = get_centers(unzipped_result_path)
@@ -474,13 +488,19 @@ def main(results_dir: str) -> None:
                 run_info=run_info,
                 coreset_path=result_path,
                 n_candidate_solutions=5,
-                use_synthetic_clusters=False,
+                synthetic_center_type=None,
             )
+            # compute_real_dataset_costs(
+            #     run_info=run_info,
+            #     coreset_path=result_path,
+            #     n_candidate_solutions=5,
+            #     synthetic_center_type="meb",
+            # )
             compute_real_dataset_costs(
                 run_info=run_info,
                 coreset_path=result_path,
                 n_candidate_solutions=5,
-                use_synthetic_clusters=True,
+                synthetic_center_type="convex",
             )
 
         print(f"Done processing file {index+1} of {total_files}.")
