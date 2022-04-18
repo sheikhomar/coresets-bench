@@ -316,7 +316,7 @@ def generate_arbitrary_point_within_minimum_enclosing_ball(center_point: np.ndar
     return random_vector
 
 
-def generate_arbitrary_k_cluster_centers(data_matrix: np.ndarray, k: int) -> np.ndarray:
+def generate_random_points_within_minimum_enclosing_ball(data_matrix: np.ndarray, k: int) -> np.ndarray:
     center_point, radius = compute_minimum_enclosing_ball(data_matrix=data_matrix, n_iter=100)
 
     n_dim = data_matrix.shape[1]
@@ -391,7 +391,7 @@ def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidat
         print(f"Generating solution #{solution_index}...")
         solution_path = coreset_path.parent / f"centers{file_postfix}.txt"
         if use_synthetic_clusters:
-            centers = generate_arbitrary_k_cluster_centers(data_matrix=coreset_points, k=run_info.k)
+            centers = generate_random_points_within_minimum_enclosing_ball(data_matrix=coreset_points, k=run_info.k)
             np.savetxt(str(solution_path), centers)
         else:
             centers = get_centers(unzipped_result_path)
