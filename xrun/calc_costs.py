@@ -340,7 +340,7 @@ def generate_random_points_within_convex_hull(data_matrix: np.ndarray, k: int, n
 
     n_points, n_dim = data_matrix.shape
     point_indices = np.arange(start=0, stop=n_points)
-    cluster_centers = np.zeros(shape=(k, n_dim))
+    generated_points = np.zeros(shape=(k, n_dim))
     
     for i in range(k):
         # Generate a random vector
@@ -349,19 +349,21 @@ def generate_random_points_within_convex_hull(data_matrix: np.ndarray, k: int, n
         # Scale the random vector to L1 unit norm
         proba_vector = random_vector / random_vector.sum()
 
-        # Randomly select data points
-        random_indices = np.random.choice(point_indices, n_samples)
-
-        # Generate a point by taking the linear combination of randomly
-        # selected input points (using random scalar values)
-        if issparse(data_matrix):
-            new_point = safe_sparse_dot(proba_vector.T, data_matrix[random_indices])
+        # Select data points
+        if n_samples is None or n_samples == n_points:
+            selected_indices = point_indices
         else:
-            new_point = np.dot(proba_vector.T, data_matrix[random_indices])
+            selected_indices = np.random.choice(point_indices, n_samples)
 
-        cluster_centers[i] = new_point
+        # Generate a point by taking the convex combination of the selected input points.
+        if issparse(data_matrix):
+            new_point = safe_sparse_dot(proba_vector.T, data_matrix[selected_indices])
+        else:
+            new_point = np.dot(proba_vector.T, data_matrix[selected_indices])
 
-    return cluster_centers
+        generated_points[i] = new_point
+
+    return generated_points
 
 
 def compute_real_dataset_costs(run_info: RunInfo, coreset_path: Path, n_candidate_solutions: int, use_synthetic_clusters: bool=False) -> None:
