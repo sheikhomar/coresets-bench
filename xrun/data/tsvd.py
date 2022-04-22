@@ -88,11 +88,15 @@ def compute_mass(X: np.ndarray, X_reduced: np.ndarray) -> float:
 def reduce_dim(input_path: str, target_dims: List[int]) -> None:
     X = load_dataset(input_path)
     for target_dim in target_dims:
+        start_time = timer()
         X_transformed, VT = perform_projection(X, target_dim)
-        mass = compute_mass(X=X, X_reduced=X_transformed)
+        end_time = timer()
+        with open(f"{input_path}-svd-d{target_dim}-running-time.txt", "w") as fp:
+            fp.write(f"{end_time - start_time}")
         reduced_dim_file_path = f"{input_path}-svd-d{target_dim}.txt.gz"
         persist_to_disk(X_transformed, reduced_dim_file_path)
         persist_to_disk(VT, f"{input_path}-svd-d{target_dim}-vt.txt.gz")
+        mass = compute_mass(X=X, X_reduced=X_transformed)
         with open(f"{reduced_dim_file_path}-sqrfrob.txt", "w") as fp:
             fp.write(f"{mass}")
 
